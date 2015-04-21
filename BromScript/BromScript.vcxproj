@@ -1,0 +1,223 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0A947EA9-78FB-4CFB-B05F-62449C4D747D}</ProjectGuid>
+    <RootNamespace>BromScript</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v110</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <DisableSpecificWarnings>4482;4996;4018;4221</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <Profile>true</Profile>
+    </Link>
+    <Lib />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <DisableSpecificWarnings>4482;4996;4018;4221</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <Profile>true</Profile>
+    </Link>
+    <Lib />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <DisableSpecificWarnings>4482;4996;4018</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <DisableSpecificWarnings>4482;4996;4018</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Libaries\BSLibDebug.h" />
+    <ClInclude Include="Objects\BSEzSock.h" />
+    <ClInclude Include="Managers\Debugger.h" />
+    <ClInclude Include="Objects\ArgumentData.h" />
+    <ClInclude Include="BromScript.h" />
+    <ClInclude Include="Libaries\BSLibString.h" />
+    <ClInclude Include="Objects\ByteReader.h" />
+    <ClInclude Include="Objects\ByteWriter.h" />
+    <ClInclude Include="Objects\CallStack.h" />
+    <ClInclude Include="Managers\Compiler.h" />
+    <ClInclude Include="Objects\CompilerException.h" />
+    <ClInclude Include="Libaries\BSLibConsole.h" />
+    <ClInclude Include="Managers\Converter.h" />
+    <ClInclude Include="Objects\ExecuteData.h" />
+    <ClInclude Include="Managers\Executer.h" />
+    <ClInclude Include="Objects\Function.h" />
+    <ClInclude Include="Managers\GarbageCollector.h" />
+    <ClInclude Include="Libaries\BSLibGlobal.h" />
+    <ClInclude Include="Managers\Instance.h" />
+    <ClInclude Include="Libaries.h" />
+    <ClInclude Include="Objects\List.h" />
+    <ClInclude Include="Libaries\BSLibMath.h" />
+    <ClInclude Include="Objects\MemberData.h" />
+    <ClInclude Include="Misc.h" />
+    <ClInclude Include="Objects\BSPacket.h" />
+    <ClInclude Include="Objects\RuntimeException.h" />
+    <ClInclude Include="Scratch\CDictionary.h" />
+    <ClInclude Include="Scratch\CFileStream.h" />
+    <ClInclude Include="Scratch\Common.h" />
+    <ClInclude Include="Scratch\CStackArray.h" />
+    <ClInclude Include="Scratch\CStream.h" />
+    <ClInclude Include="Scratch\CString.h" />
+    <ClInclude Include="Scratch\Scratch.h" />
+    <ClInclude Include="SIF.h" />
+    <ClInclude Include="Objects\Table.h" />
+    <ClInclude Include="Objects\Userdata.h" />
+    <ClInclude Include="Objects\UserdataInstance.h" />
+    <ClInclude Include="Objects\Variable.h" />
+    <ClInclude Include="Userdatas\BSUDInterop.h" />
+    <ClInclude Include="Userdatas\BSUDInteropMethod.h" />
+    <ClInclude Include="Userdatas\BSUDIO.h" />
+    <ClInclude Include="Userdatas\BSUDPacket.h" />
+    <ClInclude Include="Userdatas\BSUDRawData.h" />
+    <ClInclude Include="Userdatas\BSUDSocket.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Libaries\BSLibDebug.cpp" />
+    <ClCompile Include="Objects\BSEzSock.cpp" />
+    <ClCompile Include="Managers\Debugger.cpp" />
+    <ClCompile Include="Objects\ArgumentData.cpp" />
+    <ClCompile Include="Libaries\BSLibString.cpp" />
+    <ClCompile Include="Objects\ByteReader.cpp" />
+    <ClCompile Include="Objects\ByteWriter.cpp" />
+    <ClCompile Include="Objects\CallStack.cpp" />
+    <ClCompile Include="Managers\Compiler.cpp" />
+    <ClCompile Include="Objects\CompilerException.cpp" />
+    <ClCompile Include="Libaries\BSLibConsole.cpp" />
+    <ClCompile Include="Managers\Converter.cpp" />
+    <ClCompile Include="Objects\ExecuteData.cpp" />
+    <ClCompile Include="Managers\Executer.cpp" />
+    <ClCompile Include="Objects\Function.cpp" />
+    <ClCompile Include="Managers\GarbageCollector.cpp" />
+    <ClCompile Include="Libaries\BSLibGlobal.cpp" />
+    <ClCompile Include="Managers\Instance.cpp" />
+    <ClCompile Include="Objects\List.cpp" />
+    <ClCompile Include="Libaries\BSLibMath.cpp" />
+    <ClCompile Include="Objects\MemberData.cpp" />
+    <ClCompile Include="Objects\BSPacket.cpp" />
+    <ClCompile Include="Objects\RuntimeException.cpp" />
+    <ClCompile Include="Scratch\CDictionary.cpp" />
+    <ClCompile Include="Scratch\CFileStream.cpp" />
+    <ClCompile Include="Scratch\Common.cpp" />
+    <ClCompile Include="Scratch\CStackArray.cpp" />
+    <ClCompile Include="Scratch\CStream.cpp" />
+    <ClCompile Include="Scratch\CString.cpp" />
+    <ClCompile Include="Objects\Table.cpp" />
+    <ClCompile Include="Objects\Userdata.cpp" />
+    <ClCompile Include="Objects\UserdataInstance.cpp" />
+    <ClCompile Include="Objects\Variable.cpp" />
+    <ClCompile Include="Userdatas\BSUDInterop.cpp" />
+    <ClCompile Include="Userdatas\BSUDInteropMethod.cpp" />
+    <ClCompile Include="Userdatas\BSUDIO.cpp" />
+    <ClCompile Include="Userdatas\BSUDPacket.cpp" />
+    <ClCompile Include="Userdatas\BSUDRawData.cpp" />
+    <ClCompile Include="Userdatas\BSUDSocket.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

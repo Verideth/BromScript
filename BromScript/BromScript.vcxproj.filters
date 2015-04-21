@@ -1,0 +1,291 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Objects">
+      <UniqueIdentifier>{057c294c-9288-44b0-b355-2c73ada8ffce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Classes">
+      <UniqueIdentifier>{727ea022-a868-4ec8-94b5-4f1f8e01379d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Objects">
+      <UniqueIdentifier>{a1835411-617e-4d4c-9968-c50475635da0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Classes">
+      <UniqueIdentifier>{ad0a8e14-f23d-453f-bdfb-9ebcb0041f97}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Libaries">
+      <UniqueIdentifier>{e7a40e9d-eaa0-4b0d-a16d-2a35ee2aace7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Libaries">
+      <UniqueIdentifier>{f725be4b-a559-4e84-8394-7bbc6e993508}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scratch">
+      <UniqueIdentifier>{c3a5d06f-7c31-4604-9e45-d51c72f858c6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SIF.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BromScript.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Libaries.h">
+      <Filter>Header Files\Libaries</Filter>
+    </ClInclude>
+    <ClInclude Include="Scratch\CDictionary.h">
+      <Filter>Scratch</Filter>
+    </ClInclude>
+    <ClInclude Include="Scratch\CStackArray.h">
+      <Filter>Scratch</Filter>
+    </ClInclude>
+    <ClInclude Include="Scratch\CString.h">
+      <Filter>Scratch</Filter>
+    </ClInclude>
+    <ClInclude Include="Scratch\Common.h">
+      <Filter>Scratch</Filter>
+    </ClInclude>
+    <ClInclude Include="Scratch\CStream.h">
+      <Filter>Scratch</Filter>
+    </ClInclude>
+    <ClInclude Include="Scratch\Scratch.h">
+      <Filter>Scratch</Filter>
+    </ClInclude>
+    <ClInclude Include="Scratch\CFileStream.h">
+      <Filter>Scratch</Filter>
+    </ClInclude>
+    <ClInclude Include="Libaries\BSLibConsole.h">
+      <Filter>Header Files\Libaries</Filter>
+    </ClInclude>
+    <ClInclude Include="Libaries\BSLibGlobal.h">
+      <Filter>Header Files\Libaries</Filter>
+    </ClInclude>
+    <ClInclude Include="Libaries\BSLibMath.h">
+      <Filter>Header Files\Libaries</Filter>
+    </ClInclude>
+    <ClInclude Include="Libaries\BSLibString.h">
+      <Filter>Header Files\Libaries</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\ArgumentData.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\ByteReader.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\ByteWriter.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\CallStack.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\CompilerException.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\ExecuteData.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\Function.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\List.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\MemberData.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\Table.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\Userdata.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\UserdataInstance.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\Variable.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\Compiler.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\Converter.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\Executer.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\GarbageCollector.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\Instance.h">
+      <Filter>Header Files\Classes</Filter>
+    </ClInclude>
+    <ClInclude Include="Misc.h">
+      <Filter>Header Files\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Managers\Debugger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Libaries\BSLibDebug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\BSPacket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\BSEzSock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Userdatas\BSUDSocket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Userdatas\BSUDPacket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Userdatas\BSUDIO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Userdatas\BSUDInterop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Userdatas\BSUDInteropMethod.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Userdatas\BSUDRawData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\RuntimeException.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Scratch\CDictionary.cpp">
+      <Filter>Scratch</Filter>
+    </ClCompile>
+    <ClCompile Include="Scratch\CStackArray.cpp">
+      <Filter>Scratch</Filter>
+    </ClCompile>
+    <ClCompile Include="Scratch\CString.cpp">
+      <Filter>Scratch</Filter>
+    </ClCompile>
+    <ClCompile Include="Scratch\Common.cpp">
+      <Filter>Scratch</Filter>
+    </ClCompile>
+    <ClCompile Include="Scratch\CStream.cpp">
+      <Filter>Scratch</Filter>
+    </ClCompile>
+    <ClCompile Include="Scratch\CFileStream.cpp">
+      <Filter>Scratch</Filter>
+    </ClCompile>
+    <ClCompile Include="Libaries\BSLibConsole.cpp">
+      <Filter>Source Files\Libaries</Filter>
+    </ClCompile>
+    <ClCompile Include="Libaries\BSLibGlobal.cpp">
+      <Filter>Source Files\Libaries</Filter>
+    </ClCompile>
+    <ClCompile Include="Libaries\BSLibMath.cpp">
+      <Filter>Source Files\Libaries</Filter>
+    </ClCompile>
+    <ClCompile Include="Libaries\BSLibString.cpp">
+      <Filter>Source Files\Libaries</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\ArgumentData.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\ByteReader.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\ByteWriter.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\CallStack.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\CompilerException.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\ExecuteData.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\Function.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\List.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\MemberData.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\Table.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\Userdata.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\UserdataInstance.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\Variable.cpp">
+      <Filter>Source Files\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\Compiler.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\Converter.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\Executer.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\GarbageCollector.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\Instance.cpp">
+      <Filter>Source Files\Classes</Filter>
+    </ClCompile>
+    <ClCompile Include="Managers\Debugger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Libaries\BSLibDebug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\BSPacket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\BSEzSock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Userdatas\BSUDSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Userdatas\BSUDPacket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Userdatas\BSUDIO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Userdatas\BSUDInterop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Userdatas\BSUDInteropMethod.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Userdatas\BSUDRawData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\RuntimeException.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

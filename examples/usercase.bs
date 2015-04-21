@@ -1,0 +1,129 @@
+#set preproctestif jup
+#define preprocdef "jup"
+
+if (preprocdef != "jup") error("preprocessor define is invalid")
+#if preproctestif != jup
+	error("preprocessor if is invalid")
+#end
+
+local tbl = {}
+for (local i = 0, i < 200, i++) tbl[i] = true
+for (local i = 0, i < 200, i++) tbl[i] = null
+if (#tbl != 0) error("Tbl Count or remove wrong: " + #tbl)
+
+tbl = {}
+tbl2 = {}
+function tbl.a(){ return function(){ function tbl2.b(){ return tbl2.c }  return tbl2 } }
+if (tbl.a()()["b"]() != null) error("Table call invalid!")
+if (tbl["a"]()()["b"]() != null) error("Table call invalid!")
+
+tbl.a()().c = "good"
+if (tbl.a()().b() != "good") error("Table set/call invalid!")
+
+if (1 == 1) {} else {print("if wrong")}
+if (2 == 1) {print("else wrong")} else {}
+if (3 == 1) {print("else if wrong")} elseif (2 + 2 == 4) {} else {print("else if wrong")}
+
+local backtest = false
+function a(){
+	error("Rewind or goto invalid")
+	a:
+	rewind // do note, if we don't rewind, we're gonna have a bad time. (only applies when jumping outside of current function)
+	error("Rewind or goto invalid")
+}
+
+function b(){
+	goto a
+	backtest = true
+}
+b()
+if (!backtest) error("Rewind or goto invalid")
+
+local labelcheck = false
+goto label_after
+error("goto invalid")
+
+label_before:
+labelcheck = true
+label_after:
+
+if (!labelcheck){
+	goto label_before
+	
+	error("goto invalid")
+}
+
+
+if (1 << 2 != 4) error("Bitwise left invalid")
+if (2 >> 1 != 1) error("Bitwise right invalid")
+if (1 | 2 != 3) error("Bitwise or invalid")
+if (1 & 2 != 0) error("Bitwise and invalid")
+
+if ("%b%" % {"a", "c"} != "abc") error("String formating failed")
+
+if (#"strlen" != 6) error("# operator Invalid")
+if (String.FromChar(97) != "a") error("FromChar Invalid")
+if (String.IndexOf("mo", "o") != 1) error("IndexOf Invalid")
+if (String.LastIndexOf("hellooo", "o") != 6) error("LastIndexOf Invalid")
+if (String.Left("ape", 1) != "pe") error("Left Invalid")
+if (String.Right("ape", 1) != "ap") error("Right Invalid")
+if (String.Replace("ape", "e", "a") != "apa") error("Replace Invalid")
+if (String.Split("a,b,c,d,e", ",")[2] != "c") error("Split Invalid")
+if (String.Sub("ape", 1) != "pe") error("Sub Invalid")
+if (String.Sub("ape", 1, 1) != "p") error("Sub Invalid")
+if (String.ToChar("a") != 97) error("ToChar Invalid")
+if (String.Trim(" a ") != "a") error("Trim Invalid")
+if (String.Trim(". a. ", ". ") != "a") error("Trim2 Invalid")
+if (String.TrimLeft(" a") != "a") error("TrimLeft Invalid")
+if (String.TrimRight("a ") != "a") error("TrimRight Invalid")
+if (String.TrimLeft(". a", ". ") != "a") error("TrimLeft2 Invalid")
+if (String.TrimRight("a. ", ". ") != "a") error("TrimRight2 Invalid")
+
+testfunc = function(){return "good"}
+if (testfunc() != "good") error("anon function invalid!")
+
+local numi = 0
+function repfunc(){ numi++; return repfunc }
+repfunc()()()()()
+if (numi != 5) error("Repeat function invalid!")
+
+local i = 0
+while(i < 5){i++}
+if (i != 5) error("while loop invalid or ++ OP invalid!")
+
+for (local i = 0, i < 5, i++){}
+if (i != 5) error("while loop invalid or ++ OP invalid!")
+
+foreach (k, v, {1, 2, 3, 4, 5}){ if (k == null || v == null) error("foreach invalid") }
+foreach (k, v, {a = 1, b = 2, c = 3, d = 4, e = 5}){ if (k == null || v == null) error("foreach indexed invalid") }
+
+local tmp = 0
+loop(i, 10) tmp++
+if (tmp != 10) error("Loop is wrong")
+
+tmp = 0
+loop(i, true) {
+	if (i >= 10) {
+		break
+	}
+	
+	tmp = i
+}
+if (tmp != 10) error("Loop is wrong")
+
+tbl = {
+	a = "test",
+	b = "test",
+	c = "test"
+}
+
+if (!tbl["a"] || !tbl["b"] || !tbl["c"] || (tbl["c"] != "test")) error("Table init invalid")
+
+local tbl = {1,2,3,4,5}
+tbl[2] = null
+foreach(k, v, tbl){if (k == 2) error("Tbl index remove failed!")}
+
+function ret3(a, b, c){ return "G" * (a + b + c) }
+if (ret3(1, 1, 1) != "GGG") error("func call or str mult invalid")
+
+print("All tests passed!")

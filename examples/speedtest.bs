@@ -1,0 +1,17 @@
+local derp = 0;
+local lastsec = time()
+
+loop(i, true){
+	derp++
+	
+	if (derp > 0) {
+		derp = 0
+	}
+	
+	local cursec = time()
+	if (cursec - 1 >= lastsec){
+		lastsec = cursec
+		print(i)
+		i = 0;
+	}
+}

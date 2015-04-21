@@ -229,3 +229,9 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# linux gcc
+*.o
+
+# bromscript compiled files
+*.cbs

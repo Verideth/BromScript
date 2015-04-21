@@ -1,0 +1,162 @@
+// Interop libary. 
+// Here's a SDL2 pong game. 
+// NOTE: Interop only works on windows currently, not on linux. 
+
+local function CreateRect(x, y, w, h){ 
+    local ret = new RawData(16) // x y w h ints 
+     
+    ret.SetInt(0, x) 
+    ret.SetInt(4, y) 
+    ret.SetInt(8, w) 
+    ret.SetInt(12, h) 
+     
+    return ret 
+}
+
+local iop = new Interop("SDL2.dll") 
+local im_SDL_Window = iop.GetMethod("SDL_CreateWindow", "int", {"string", "int", "int", "int", "int", "int"}) 
+local im_SDL_Init = iop.GetMethod("SDL_Init", "void", {"int"}) 
+local im_SDL_Delay = iop.GetMethod("SDL_Delay", "void", {"int"}) 
+local im_SDL_Destroy = iop.GetMethod("SDL_DestroyWindow", "void", {"int"}) 
+local im_SDL_GetWindowSurface = iop.GetMethod("SDL_GetWindowSurface", "int", {"int"}) 
+local im_SDL_FillRect = iop.GetMethod("SDL_FillRect", "void", {"int", "int", "int"}) 
+local im_SDL_UpdateWindowSurface = iop.GetMethod("SDL_UpdateWindowSurface", "void", {"int"}) 
+local im_SDL_Quit = iop.GetMethod("SDL_Quit", "void", {}) 
+local im_SDL_PollEvent = iop.GetMethod("SDL_PollEvent", "int", {"int"}) 
+local im_SDL_SetWindowTitle = iop.GetMethod("SDL_SetWindowTitle", "void", {"int", "string"}) 
+
+local windowWidth = 512 
+local windowHeight = 512 
+local windowRect = CreateRect(0, 0, windowWidth, windowHeight) 
+
+local paddleHeight = 70 
+local paddleWidth = 5 
+local ballSize = 10 
+local scoreA = 0 
+local scoreB = 0 
+
+local event = new RawData(58) // size of sdl event 
+local ball = CreateRect(windowWidth / 2 - ballSize / 2, windowWidth / 2 - ballSize / 2, ballSize, ballSize) 
+
+local playerA = CreateRect(5, 5, paddleWidth, paddleHeight) 
+local playerB = CreateRect(windowWidth - 5 - paddleWidth, 5, paddleWidth, paddleHeight) 
+
+if (im_SDL_Init(0x00000020) < 0){ 
+    error("could not init SDL D:") 
+} 
+
+local whandle = im_SDL_Window("BromScript pong", 100, 100, windowWidth, windowHeight, 0x00000002) 
+if (whandle == 0){ 
+    error("could not make window D:") 
+} 
+
+local surface = im_SDL_GetWindowSurface(whandle); 
+if (surce == 0){ 
+    error("could not load surface! D:") 
+} 
+
+
+local inkeys = {} 
+local ballVelocity = {1, -1} 
+
+local lastframe = time();
+while(true){
+    while(im_SDL_PollEvent(event.GetReference()) != 0){ 
+        local etype = event.GetInt(0) 
+         
+        if (etype == 256){ 
+            im_SDL_Destroy(whandle) 
+            im_SDL_Quit() 
+            return 
+        } 
+         
+        if (etype == 768){ // key in 
+            inkeys[event.GetInt(16)] = true 
+        }elseif (etype == 769){ // key out 
+            inkeys[event.GetInt(16)] = false 
+        } 
+    } 
+     
+    if (inkeys[82]){ 
+        local plyY = playerA.GetInt(4) 
+        if ((plyY - 4) >= 0){ 
+            playerA.SetInt(4, plyY - 4) 
+        } 
+    } 
+     
+    if (inkeys[81]){ 
+        local plyY = playerA.GetInt(4) 
+        if ((plyY + 4) <= (windowHeight - paddleHeight)){ 
+            playerA.SetInt(4, plyY + 4) 
+        } 
+    } 
+     
+    local bx = ball.GetInt(0) + ballVelocity[0] 
+    local by = ball.GetInt(4) + ballVelocity[1] 
+     
+    if (bx <= 0){ 
+        scoreB++; 
+        bx = windowWidth / 2 
+        by = windowHeight / 2 
+         
+        im_SDL_SetWindowTitle(whandle, "BromScript pong: A: %, B: %" % {scoreA, scoreB}); 
+    }elseif (bx >= (windowWidth - ballSize)){ 
+        scoreA++; 
+        bx = windowWidth / 2 
+        by = windowHeight / 2 
+         
+        im_SDL_SetWindowTitle(whandle, "BromScript pong: A: %, B: %" % {scoreA, scoreB}); 
+    } 
+     
+    local plyAY = playerA.GetInt(4) 
+    if (bx < (5 + paddleWidth)){ 
+        if ((by + ballSize) > plyAY){ 
+            if (by <= (plyAY + paddleHeight)){ 
+                ballVelocity[0] *= -1 
+                 
+                local rem = (plyAY + paddleHeight / 2) - by 
+                rem /= paddleHeight / 2 
+                ballVelocity[1] = rem 
+            } 
+        } 
+    } 
+     
+    local plyBY = playerB.GetInt(4) 
+    if (bx + ballSize >= (windowWidth - 5 - paddleWidth)){ 
+        if((by + ballSize) > plyBY){ 
+            if (by <= (plyBY + paddleHeight)){ 
+                ballVelocity[0] *= -1 
+                 
+                local rem = (plyBY + paddleHeight / 2) - by 
+                rem /= paddleHeight / 2 
+                ballVelocity[1] = rem 
+            } 
+        } 
+    } 
+     
+    if (by <= 0) {
+		ballVelocity[1] *= -1 
+	}
+		
+    if (by >= (windowHeight - ballSize)) {
+		ballVelocity[1] *= -1
+		by -= 5;
+	}
+     
+     
+    ball.SetInt(0, bx) 
+    ball.SetInt(4, by) 
+     
+    // playerB is AI, cheat :D 
+    local nby = by - paddleHeight / 2 
+    if (nby < 0) nby = 0 
+    if (nby > (windowHeight - paddleHeight)) nby = windowHeight - paddleHeight 
+    playerB.SetInt(4, nby) 
+     
+    im_SDL_FillRect(surface, windowRect.GetReference(), 0x000000) 
+    im_SDL_FillRect(surface, ball.GetReference(), 0xFFFFFF) 
+    im_SDL_FillRect(surface, playerA.GetReference(), 0xFF0000) 
+    im_SDL_FillRect(surface, playerB.GetReference(), 0x0000FF) 
+     
+    im_SDL_UpdateWindowSurface(whandle) 
+}
