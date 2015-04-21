@@ -63,6 +63,7 @@ void ThreadedCodeExec(){
 			CurrentOutput += CString::Format("[red]Runtime error %s[/red]\n", err.Message.str_szBuffer);
 		}
 	} catch (BromScript::CompilerException err) {
+		outputlock.lock();
 		CurrentOutput += CString::Format("[red]Error while compiling '%s:%d': %s[/red]\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
 	}
 	outputlock.unlock();
@@ -163,7 +164,6 @@ int main(int argc, char* argv[])
 
 	EzSock s;
 	s.create();
-	//s.bind(5196);
 	s.bind(12412);
 	s.listen();
 
