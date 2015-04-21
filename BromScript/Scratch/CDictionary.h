@@ -62,7 +62,6 @@ public:
 
 	TValue& operator[](const TKey &key);
 
-	/// Get a fucking value from the dictionary using the freaking key, Fuck you sparkle.
 	TValue& GetValueByIndex(const int iIndex);
 	TKey& GetKeyByIndex(const int iIndex);
 };

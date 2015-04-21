@@ -123,6 +123,7 @@ Type* CStackArray<Type>::Pop(void) {
 /// Pop a certain index from the stack
 template<class Type>
 Type* CStackArray<Type>::PopAt(int iIndex) {
+	ASSERT(iIndex >= 0);
 	ASSERT(iIndex < Count());
 
 	// decrease iterator

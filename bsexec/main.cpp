@@ -256,12 +256,14 @@ int main(int argc, char* argv[]) {
 							fprintf(stderr, "Runtime error '?:?': %s\n", err.Message.str_szBuffer);
 						}
 					}
+					return 0;
 				} catch (BromScript::CompilerException err) {
 					if (formated) {
 						fprintf(stderr, "ERROR::Compiling:%s:%d:%s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
 					} else {
 						fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
 					}
+					return 0;
 				}
 			}
 		}

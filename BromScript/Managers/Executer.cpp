@@ -1418,7 +1418,7 @@ namespace BromScript {
 				data->Continueing = false;
 				data->Reader->Pos = codepos; // back to the depths we go!
 
-				ivar = data->Function->GetVar(key);
+				ivar = data->Function->FixedLocalVars[localindex];
 				if (ivar->Type != VariableType::Number) {
 					BS_THROW_ERROR(data->BromScript, CString::Format("Variable '%s' is used as looper, but isn't a number anymore, instead it's a '%s'", key.str_szBuffer, Converter::TypeToString(var).str_szBuffer));
 					return;

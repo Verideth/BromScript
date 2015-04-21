@@ -112,14 +112,18 @@ void CDictionary<TKey, TValue>::RemoveByIndex(const int iIndex) {
 template<class TKey, class TValue>
 void CDictionary<TKey, TValue>::RemoveByKey(const TKey &key) {
 	// remove by index
-	RemoveByIndex(IndexByKey(key));
+	int index = IndexByKey(key);
+	if (index == -1) return;
+	RemoveByIndex(index);
 }
 
 /// Remove a value from the dictionary
 template<class TKey, class TValue>
 void CDictionary<TKey, TValue>::RemoveByValue(const TValue &value) {
-	// remove by index
-	RemoveByIndex(IndexByValue(value));
+	// remove by value
+	int index = IndexByValue(value);
+	if (index == -1) return;
+	RemoveByIndex(index);
 }
 
 /// Return how many objects there currently are in the dictionary

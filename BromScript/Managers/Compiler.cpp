@@ -225,8 +225,6 @@ namespace BromScript {
 				this->DoDefines();
 			}
 
-			this->CurrentStatmentLine = -1;
-
 			int oldpos = this->CurrentPos;
 			CString* tmpstr = this->ReadLine();
 			if (tmpstr == null)
@@ -271,15 +269,14 @@ namespace BromScript {
 					args[i] = this->Unescape(args[i]);
 
 				if (cmd == "define") {
-					this->Defines.Add(args[1], args[2]);
+					this->Defines[args[1]] = args[2];
+
 					redodefines = true;
 				} else if (cmd == "set") {
-					if (this->Sets.HasKey(args[1])) {
-						this->Sets[args[1]] = args[2];
-					} else {
-						this->Sets.Add(args[1], args[2]);
-					}
-				} else if (cmd == "if") {
+					this->Sets[args[1]] = args[2];
+				} else if (cmd == "unset") {
+					this->Sets.RemoveByKey(args[1]);
+				} else if (cmd == "if" || cmd == "elseif") {
 					if (!this->Sets[args[1]])
 						this->ThrowError(CString::Format("Unknown preprocessor if var '%s'", args[1].str_szBuffer));
 
@@ -348,6 +345,7 @@ namespace BromScript {
 		str = str.Replace("\\\"", "\"");
 		str = str.Replace("\\\\", "\\");
 		str = str.Replace("\\0", "\0");
+		str = str.Replace("\\1", "\1");
 		str = str.Replace("\\a", "\a");
 		str = str.Replace("\\b", "\b");
 		str = str.Replace("\\f", "\f");
@@ -428,6 +426,8 @@ namespace BromScript {
 	}
 
 	CString* Compiler::ReadLine() {
+		this->CurrentStatmentLine = -1;
+
 		if (this->CurrentPos >= this->ChunkSize)
 			return null;
 
@@ -469,8 +469,10 @@ namespace BromScript {
 						break;
 
 					case '#':
-						// only encountered the pre-processor so far.
+						// if we only encountered the pre-processor so far.
 						if (this->CurrentStatmentLine == -1) {
+							this->CurrentStatmentLine = GetCurrentLine(this->CurrentChunk, i);
+
 							char* strptr = strstr(this->CurrentChunk + i, "\n");
 							if (strptr == null)
 								strptr = this->CurrentChunk + this->ChunkSize;
@@ -1576,7 +1578,7 @@ doreturn:
 						i++;
 					}
 				}
-
+				 
 				int dlen = this->Defines.Count();
 				for (int di = 0; di < dlen; di++) {
 					CString key = this->Defines.GetKeyByIndex(di);
@@ -1745,7 +1747,6 @@ doreturn:
 
 		CString codechunk;
 		if (chunkpos == -1) {
-			this->CurrentStatmentLine = -1;
 			CString* tmp = this->ReadLine();
 			if (tmp == null)
 				this->ThrowError("No chunk at while");
@@ -1895,7 +1896,6 @@ doreturn:
 		int chunkpos = this->FindChar(line, 0, "{", 1);
 		CString codechunk;
 		if (chunkpos == -1) {
-			this->CurrentStatmentLine = -1;
 			CString* tmp = this->ReadLine();
 			if (tmp == null)
 				this->ThrowError("No chunk at foreach");
@@ -1972,7 +1972,6 @@ doreturn:
 		int chunkpos = this->FindChar(line, 0, "{", 1);
 		CString codechunk;
 		if (chunkpos == -1) {
-			this->CurrentStatmentLine = -1;
 			CString* tmp = this->ReadLine();
 			if (tmp == null)
 				this->ThrowError("No chunk at for");
@@ -2394,7 +2393,6 @@ doreturn:
 		CString* tmp;
 		CString codechunk;
 		if (chunkpos == -1) {
-			this->CurrentStatmentLine = -1;
 			tmp = this->ReadLine();
 			if (tmp == null)
 				this->ThrowError("Could not find code chunk");
@@ -2455,7 +2453,6 @@ doreturn:
 		delete[] bytecode;
 
 		while (nextif != 0) {
-			this->CurrentStatmentLine = -1;
 			CString* tmp = this->ReadLine();
 			if (tmp == null)
 				this->ThrowError("This should not happen in any case... wierd... Mind posting this as bug along with your code?");
@@ -2465,7 +2462,6 @@ doreturn:
 
 			int chunkpos = this->FindChar(line, 0, "{", 1);
 			if (chunkpos == -1) {
-				this->CurrentStatmentLine = -1;
 				tmp = this->ReadLine();
 				if (tmp == null)
 					this->ThrowError("Could not find code chunk");
