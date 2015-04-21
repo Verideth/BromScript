@@ -325,7 +325,7 @@ namespace BromScript {
 		byte* btcode = null;
 		int size = code.Size();
 		try {
-			btcode = Compiler::Run("D_EXEC", code, size, &size, true, false);
+			btcode = Compiler::Run("D_EXEC", code, size, &size);
 		} catch (CompilerException err) {
 			ret = err.Message;
 		}

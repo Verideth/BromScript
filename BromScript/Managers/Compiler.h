@@ -52,7 +52,8 @@ namespace BromScript {
 
 	class Compiler {
 	public:
-		static byte* Run(const char* filename, const char* chunk, int chunklen, int* outbytecodelength, bool writelinenumbers = true, bool writeheader = true);
+		static byte* Run(const char* filename, const char* chunk, int chunklen, int* outbytecodelength);
+		static byte* Run(const char* filename, const char* chunk, int chunklen, int* outbytecodelength, bool writelinenumbers, bool writeheader, List<CompilerException>& warnings);
 
 	private:
 		Compiler* Parent;
@@ -64,8 +65,9 @@ namespace BromScript {
 
 		ByteWriter Writer;
 		List<CompilerLocalData>& Locals;
-		Scratch::CDictionary<Scratch::CString, CompilerLabelData>& Labels;
 		List<CompilerLabelData>& Gotos;
+		List<CompilerException>& Warnings;
+		Scratch::CDictionary<Scratch::CString, CompilerLabelData>& Labels;
 
 		Scratch::CDictionary<Scratch::CString, Scratch::CString> Defines;
 		Scratch::CDictionary<Scratch::CString, Scratch::CString> Sets;
@@ -95,6 +97,7 @@ namespace BromScript {
 		int FindChar(Scratch::CString line, int startpos, char* tofind, int tofindlen);
 
 		void ThrowError(Scratch::CString reason);
+		void ThrowWarning(Scratch::CString reason);
 
 		void WriteFunction(Scratch::CString line);
 		void WriteClass(Scratch::CString line);
@@ -111,7 +114,7 @@ namespace BromScript {
 		void WriteGoto(Scratch::CString line);
 		void WriteRewind(Scratch::CString line);
 
-		Compiler(Scratch::CString filename, const char* chunk, int chunklen, bool addcurline, List<CompilerLocalData>& locals, Scratch::CDictionary<Scratch::CString, CompilerLabelData>& labels, List<CompilerLabelData>& gotos, Compiler* parent);
+		Compiler(Scratch::CString filename, const char* chunk, int chunklen, bool addcurline, List<CompilerLocalData>& locals, Scratch::CDictionary<Scratch::CString, CompilerLabelData>& labels, List<CompilerLabelData>& gotos, List<CompilerException>& warnings, Compiler* parent);
 		~Compiler(void);
 
 		byte* Run(int* outbytecodelength, List<Scratch::CString*>* strtbl);

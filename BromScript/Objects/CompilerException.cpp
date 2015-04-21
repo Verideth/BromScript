@@ -22,10 +22,7 @@ using namespace Scratch;
 
 
 namespace BromScript{
-	CompilerException::CompilerException(CString msg, CString file, int line) :CurrentLine(line), CurrentFile(file), Message(msg) {
-	}
-
-
-	CompilerException::~CompilerException(void) {
-	}
+	CompilerException::CompilerException() :CurrentLine(-1), CurrentFile(""), Message("") { }
+	CompilerException::CompilerException(CString msg, CString file, int line) : CurrentLine(line), CurrentFile(file), Message(msg) {}
+	CompilerException::~CompilerException() { }
 }

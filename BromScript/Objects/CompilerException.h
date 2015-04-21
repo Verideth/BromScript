@@ -24,8 +24,9 @@
 namespace BromScript{
 	class CompilerException {
 	public:
+		CompilerException();
 		CompilerException(Scratch::CString msg, Scratch::CString file, int line);
-		~CompilerException(void);
+		~CompilerException();
 
 		int CurrentLine;
 		Scratch::CString CurrentFile;

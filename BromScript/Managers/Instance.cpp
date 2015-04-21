@@ -101,7 +101,7 @@ namespace BromScript {
 	}
 
 	Variable* Instance::DoString(const char* codename, const char* code, int size) {
-		byte* bytecode = Compiler::Run(codename, code, size, &size, true, false);
+		byte* bytecode = Compiler::Run(codename, code, size, &size);
 		Variable* ret = this->DoCode(codename, bytecode, size);
 		delete[] bytecode;
 
@@ -245,7 +245,7 @@ namespace BromScript {
 			}
 		}
 
-		byte* bytecode = Compiler::Run(filename, (char*)buff, filesize, &filesize, true, false);
+		byte* bytecode = Compiler::Run(filename, (char*)buff, filesize, &filesize);
 		delete[] buff;
 
 		Variable* ret = this->DoCode(filename, bytecode, filesize);
@@ -256,13 +256,44 @@ namespace BromScript {
 	}
 
 	Variable* Instance::DoCode(const char* filename, byte* code, int codelen) {
+		byte* codecopy;
+
+		if (codelen > 13) {
+			// \0 BROMSCRIPT \0 VERSION
+			bool iscompiled = true;
+			byte bytecheck[] = {0, 66, 82, 79, 77, 83, 67, 82, 73, 80, 84, 0};
+			for (int i = 0; i < 12; i++) { // tag is 13, but the last one is version so go to 12, we'll handle the version later.
+				if (bytecheck[i] != code[i]) {
+					iscompiled = false;
+					break;
+				}
+
+				if (i == 11) { // last loop
+					if (code[12] != BROMSCRIPT_CURRENTVERSION) {
+						delete code;
+						throw RuntimeException(CString::Format("Cannot execute '%s', invalid CBS version.", filename));
+					}
+				}
+			}
+
+			codecopy = new byte[codelen];
+			memcpy(codecopy, code, codelen);
+
+			if (iscompiled) {
+				for (int i = 0; i < 13; i++) {
+					codecopy[i] = (byte)Misc::ExecFuncs::Skip;
+				}
+			}
+		} else {
+			codecopy = new byte[codelen];
+			memcpy(codecopy, code, codelen);
+		}
+
 		Function* f = new Function(this);
-		f->Code = new byte[codelen];
+		f->Code = codecopy;
 		f->CodeLength = codelen;
 		f->Name = "BS::Entrypoint";
 		f->Filename = filename;
-
-		memcpy(f->Code, code, codelen);
 
 		Variable* ret = f->Run();
 

@@ -53,6 +53,19 @@ if (!labelcheck){
 	error("goto invalid")
 }
 
+#set a nottest
+#set b test
+#if a == test
+	#if b == test
+		error("Nested #ifs invalid")
+	#end
+#elseif a == nottest
+	goto nestedif_escape
+#end
+error("Nested #ifs invalid")
+
+nestedif_escape:
+
 
 if (1 << 2 != 4) error("Bitwise left invalid")
 if (2 >> 1 != 1) error("Bitwise right invalid")

@@ -814,6 +814,7 @@ namespace BromScript {
 			int localindex = data->Reader->ReadInt();
 			tblname = data->Function->FixedLocalKeys[localindex];
 			curvar = data->Function->FixedLocalVars[localindex];
+			if (curvar == null) curvar = data->BromScript->GetDefaultVarNull();
 		} else {
 			tblname = data->Reader->ReadString();
 			curvar = data->Function->GetVar(tblname);

@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace Scratch;
 
 namespace BromScript {
-	Compiler::Compiler(CString filename, const char* chunk, int chunklen, bool addcurline, List<CompilerLocalData>& locals, CDictionary<CString, CompilerLabelData>& labels, List<CompilerLabelData>& gotos, Compiler* parent) : Parent(parent), Gotos(gotos), Locals(locals), Labels(labels), CurrentChunk(null), Filename(filename), WriteLineNumbers(addcurline), CurrentLineParent(0), CurrentPos(0), ChunkSize(chunklen) {
+	Compiler::Compiler(CString filename, const char* chunk, int chunklen, bool addcurline, List<CompilerLocalData>& locals, CDictionary<CString, CompilerLabelData>& labels, List<CompilerLabelData>& gotos, List<CompilerException>& warnings, Compiler* parent) : Parent(parent), Gotos(gotos), Locals(locals), Warnings(warnings), Labels(labels), CurrentChunk(null), Filename(filename), WriteLineNumbers(addcurline), CurrentLineParent(0), CurrentPos(0), ChunkSize(chunklen) {
 		if (this->ChunkSize == 0)
 			return;
 
@@ -41,12 +41,17 @@ namespace BromScript {
 		}
 	}
 
-	byte* Compiler::Run(const char* filename, const char* chunk, int chunklen, int* outbytecodelength, bool writecodelines, bool writeheader) {
+	byte* Compiler::Run(const char* filename, const char* chunk, int chunklen, int* outbytecodelength) {
+		List<CompilerException> warnings;
+		return Compiler::Run(filename, chunk, chunklen, outbytecodelength, true, true, warnings);
+	}
+
+	byte* Compiler::Run(const char* filename, const char* chunk, int chunklen, int* outbytecodelength, bool writecodelines, bool writeheader, List<CompilerException>& warnings) {
 		List<CString*> strtbl;
 		List<CompilerLocalData> locals;
 		CDictionary<CString, CompilerLabelData> labels;
 		List<CompilerLabelData> gotos;
-		Compiler c(filename, chunk, chunklen, writecodelines, locals, labels, gotos, null);
+		Compiler c(filename, chunk, chunklen, writecodelines, locals, labels, gotos, warnings, null);
 		c.CurrentLineParent = 1; // file start at 0 line number, so add one here, it fixes a shitload of headage.
 
 		if (writeheader) {
@@ -99,7 +104,6 @@ namespace BromScript {
 				c.ThrowError(CString::Format("Cannot find label '%s'", gd.Name.str_szBuffer));
 			}
 
-
 			CompilerLabelData ld = labels[gd.Name];
 			if (ld.ScopeDept - gd.ScopeDept > 0) {
 				for (int i = 0; i < strtbl.Count; i++) {
@@ -114,6 +118,8 @@ namespace BromScript {
 			if (gd.Offset < ld.ScopeStart || gd.Offset > ld.ScopeEnd) {
 				// overwrite scope to 0, just jump and hope the person has a "back" in there :v
 				ld.ScopeDept = gd.ScopeDept;
+				c.CurrentStatmentLine = gd.Line;
+				c.ThrowWarning("Jumping inside of another function, unsafe!");
 			}
 
 			*(short*)(code + gd.Offset) = ld.ScopeDept - gd.ScopeDept;
@@ -265,20 +271,29 @@ namespace BromScript {
 
 				CString cmd = args[0].ToLower();
 
-				for (int i = 1; i < args.Count; i++)
+				for (int i = 1; i < args.Count; i++) {
 					args[i] = this->Unescape(args[i]);
+				}
 
 				if (cmd == "define") {
+					if (args.Count != 3) this->ThrowError(CString::Format("Expected 2 arguments at '#%s'", cmd.str_szBuffer));
 					this->Defines[args[1]] = args[2];
 
 					redodefines = true;
 				} else if (cmd == "set") {
+					if (args.Count != 3) this->ThrowError(CString::Format("Expected 2 arguments at '#%s'", cmd.str_szBuffer));
 					this->Sets[args[1]] = args[2];
 				} else if (cmd == "unset") {
+					if (args.Count != 2) this->ThrowError(CString::Format("Expected 1 argument at '#%s'", cmd.str_szBuffer));
 					this->Sets.RemoveByKey(args[1]);
+				} else if (cmd == "undefine") {
+					if (args.Count != 2) this->ThrowError(CString::Format("Expected 1 argument at '#%s'", cmd.str_szBuffer));
+					this->Defines.RemoveByKey(args[1]);
 				} else if (cmd == "if" || cmd == "elseif") {
-					if (!this->Sets[args[1]])
+					if (args.Count != 4) this->ThrowError(CString::Format("Expected 3 arguments at '#%s'", cmd.str_szBuffer));
+					if (!this->Sets[args[1]]) {
 						this->ThrowError(CString::Format("Unknown preprocessor if var '%s'", args[1].str_szBuffer));
+					}
 
 					bool doblock = args[2] == "==" ? this->Sets[args[1]] == args[3] : this->Sets[args[1]] != args[3];
 					if (doblock) {
@@ -295,7 +310,7 @@ namespace BromScript {
 				} else if (cmd.StartsWith('!')) {
 					// do absolutly nothing, yay linux hash-bang!
 				} else {
-					this->ThrowError(CString::Format("Unknown preprocessor '#%s'", cmd.str_szBuffer));
+					this->ThrowWarning(CString::Format("Unknown preprocessor '#%s'", cmd.str_szBuffer));
 				}
 			} else {
 				if (curline.StartsWith("function") || curline.StartsWith("local function")) this->WriteFunction(curline);
@@ -322,7 +337,10 @@ namespace BromScript {
 	}
 
 	int Compiler::SkipIfBlock() {
+		int nested = 0;
+
 		while (true) {
+			int oldpos = this->CurrentPos;
 			CString* tmpstr = this->ReadLine();
 			if (tmpstr == null)
 				return 2;
@@ -331,11 +349,26 @@ namespace BromScript {
 			delete tmpstr;
 
 			if (cur.StartsWith("#")) {
-				if (cur.StartsWith("#end"))
-					return 2;
+				if (cur.StartsWith("#end")) {
+					nested--;
 
-				if (cur.StartsWith("#else"))
+					if (nested == -1) {
+						return 2;
+					}
+				}
+
+				if (cur.StartsWith("#elseif")) {
+					this->CurrentPos = oldpos;
 					return 1;
+				}
+
+				if (cur.StartsWith("#if")) {
+					nested++;
+				}
+
+				if (cur.StartsWith("#else")) {
+					return 1;
+				}
 			}
 		}
 	}
@@ -988,7 +1021,7 @@ doreturn:
 				CString funcchunk = line.Substring(this->FindChar(line, 8, "{", 1) + 1, -1).Trim();
 
 				List<CompilerLocalData> locals;
-				Compiler chunkproc("AnonFunction", funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this);
+				Compiler chunkproc("AnonFunction", funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this->Warnings, this);
 
 
 				w.WriteByte(Misc::ExecFuncs::AnonFunction);
@@ -1523,6 +1556,10 @@ doreturn:
 		throw CompilerException(err, this->Filename, this->CurrentStatmentLine);
 	}
 
+	void Compiler::ThrowWarning(CString err) {
+		this->Warnings.Add(CompilerException(err, this->Filename, this->CurrentStatmentLine));
+	}
+
 	void Compiler::WriteReturn(CString line) {
 		this->Writer.WriteByte(Misc::ExecFuncs::Return);
 
@@ -1697,7 +1734,7 @@ doreturn:
 		this->Writer.Count += 4; // to fix label offsets
 		int labelstart = this->Labels.Count();
 		int scopestart = this->Writer.Count;
-		Compiler chunkproc(funcname, funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this);
+		Compiler chunkproc(funcname, funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this->Warnings, this);
 
 		byte* bytecode;
 		int codelen = 0;
@@ -1769,7 +1806,7 @@ doreturn:
 		int labelstart = this->Labels.Count();
 		int scopestart = this->Writer.Count;
 
-		Compiler chunkproc("while", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+		Compiler chunkproc("while", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 		byte* bytecode;
 		int codelen;
 		try {
@@ -1846,7 +1883,7 @@ doreturn:
 		int labelstart = this->Labels.Count();
 		int scopestart = this->Writer.Count;
 
-		Compiler chunkproc("loop", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+		Compiler chunkproc("loop", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 		byte* bytecode;
 		int bytecodelen;
 		try {
@@ -1924,7 +1961,7 @@ doreturn:
 		int labelstart = this->Labels.Count();
 		int scopestart = this->Writer.Count;
 
-		Compiler chunkproc("foreach", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+		Compiler chunkproc("foreach", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 		byte* bytecode;
 		int bytecodelen;
 		try {
@@ -1983,7 +2020,7 @@ doreturn:
 			codechunk = codechunk.Substring(0, codechunk.Size() - 1);
 		}
 
-		Compiler initproc("for (>><<, {}, {})", fordata[0].str_szBuffer, fordata[0].Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+		Compiler initproc("for (>><<, {}, {})", fordata[0].str_szBuffer, fordata[0].Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 		byte* bytecodeinit;
 		int bytecodeinitlen;
 		try {
@@ -1994,7 +2031,7 @@ doreturn:
 			throw e;
 		}
 
-		Compiler endproc("for ({} {}, >><<)", fordata[2].str_szBuffer, fordata[2].Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+		Compiler endproc("for ({} {}, >><<)", fordata[2].str_szBuffer, fordata[2].Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 		byte* bytecodeend;
 		int bytecodeendlen;
 		try {
@@ -2016,7 +2053,7 @@ doreturn:
 		int labelstart = this->Labels.Count();
 		int scopestart = this->Writer.Count;
 
-		Compiler chunkproc("for", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+		Compiler chunkproc("for", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 		byte* bytecode;
 		int bytecodelen;
 		try {
@@ -2427,7 +2464,7 @@ doreturn:
 		int labelstart = this->Labels.Count();
 		int scopestart = this->Writer.Count;
 
-		Compiler chunkproc("if statement", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+		Compiler chunkproc("if statement", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 		byte* bytecode;
 		int bytecodelen;
 		try {
@@ -2454,8 +2491,6 @@ doreturn:
 
 		while (nextif != 0) {
 			CString* tmp = this->ReadLine();
-			if (tmp == null)
-				this->ThrowError("This should not happen in any case... wierd... Mind posting this as bug along with your code?");
 
 			line = CString(tmp);
 			delete tmp;
@@ -2505,7 +2540,7 @@ doreturn:
 				int labelstart = this->Labels.Count();
 				int scopestart = this->Writer.Count;
 
-				Compiler elseifproc("elseif statement", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+				Compiler elseifproc("elseif statement", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 				try {
 					bytecode = elseifproc.Run(&bytecodelen, this->CurrentStatmentLine + this->CurrentLineParent, this->Writer.StringTable);
 				} catch (CompilerException e) {
@@ -2535,7 +2570,7 @@ doreturn:
 				int labelstart = this->Labels.Count();
 				int scopestart = this->Writer.Count;
 
-				Compiler elseproc("else statement", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+				Compiler elseproc("else statement", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 				try {
 					bytecode = elseproc.Run(&bytecodelen, this->CurrentStatmentLine + this->CurrentLineParent, this->Writer.StringTable);
 				} catch (CompilerException e) {
@@ -2601,7 +2636,7 @@ doreturn:
 		int labelstart = this->Labels.Count();
 		int scopestart = this->Writer.Count;
 
-		Compiler chunkproc(name, chunk.str_szBuffer, chunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this);
+		Compiler chunkproc(name, chunk.str_szBuffer, chunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
 
 		byte* bytecode;
 		int bytecodelen;

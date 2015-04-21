@@ -66,17 +66,29 @@ char * getline() {
 	return linep;
 }
 
+#define OUTPUT_SUCCESS(type, file, line, msg) line > -1 ? (formated ? fprintf(stderr, "SUCCESS::%s:%s:%d:%s\n", type, file, line, msg) : fprintf(stderr, "%s success::%s:%d:%s\n", type, file, line, msg)) : (formated ? fprintf(stderr, "SUCCESS::%s:%s:?:%s\n", type, file, msg) : fprintf(stderr, "%s success::%s:?:%s\n", type, file, msg))
+#define OUTPUT_WARNING(type, file, line, msg) line > -1 ? (formated ? fprintf(stderr, "WARNING::%s:%s:%d:%s\n", type, file, line, msg) : fprintf(stderr, "%s warning::%s:%d:%s\n", type, file, line, msg)) : (formated ? fprintf(stderr, "WARNING::%s:%s:?:%s\n", type, file, msg) : fprintf(stderr, "%s warning::%s:?:%s\n", type, file, msg))
+#define OUTPUT_NOTICE(type, file, msg) formated ? fprintf(stderr, "NOTICE::%s:%s:%s\n", type, file, msg) : fprintf(stderr, "%s notice::%s:%s\n", type, file, msg)
+#define OUTPUT_ERROR(type, file, line, msg) line > -1 ? (formated ? fprintf(stderr, "ERROR::%s:%s:%d:%s\n", type, file, line, msg) : fprintf(stderr, "%s error::%s:%d:%s\n", type, file, line, msg)) : (formated ? fprintf(stderr, "ERROR::%s:%s:?:%s\n", type, file, msg) : fprintf(stderr, "%s error::%s:?:%s\n", type, file, msg))
+#define DOSLEEPIFNEEDED while (sleepatend && fgetc(stdin) != '\n') {}
+
 int main(int argc, char* argv[]) {
 	bool shouldcompile = false;
 	bool shouldrun = true;
 	bool debug = true;
 	bool runstring = false;
 	bool formated = false;
+	bool sleepatend = false;
+	bool openshell = true;
+	bool forceopenshell = false;
+	bool warningsareerrors = false;
 
 	int outi = -1;
 
 	std::string runstr;
 	std::string outname = "out.cbs";
+
+	BromScript::List<BromScript::CompilerException> warnings;
 
 	for (int i = 1; i < argc; i++) {
 		if (outi == i) continue;
@@ -97,27 +109,16 @@ int main(int argc, char* argv[]) {
 				} catch (BromScript::RuntimeException err) {
 					BromScript::Function* func = bsi.GetCurrentFunction();
 					if (func != null) {
-						if (formated) {
-							fprintf(stderr, "ERROR::Runtime:%s:%d:%s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
-						} else {
-							fprintf(stderr, "Runtime error '%s:%d': %s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
-						}
+						OUTPUT_ERROR("Runtime", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
 					} else {
-						if (formated) {
-							fprintf(stderr, "ERROR::Runtime:?:?:%s\n", err.Message.str_szBuffer);
-						} else {
-							fprintf(stderr, "Runtime error '?:?': %s\n", err.Message.str_szBuffer);
-						}
+						OUTPUT_ERROR("Runtime", "?", -1, err.Message.str_szBuffer);
 					}
 
 				} catch (BromScript::CompilerException err) {
-					if (formated) {
-						fprintf(stderr, "ERROR::Compiling:%s:%d:%s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
-					} else {
-						fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
-					}
+					OUTPUT_ERROR("Compiling", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
 				}
 
+				DOSLEEPIFNEEDED;
 				return 0;
 			}
 
@@ -127,28 +128,24 @@ int main(int argc, char* argv[]) {
 		if (arg[0] == '-') {
 			for (unsigned int i2 = 0; i2 < arg.size(); i2++) {
 				switch (arg[i2]) {
+					case 'i': forceopenshell = true; break;
+					case 'w': sleepatend = true; break;
+					case 'd': debug = false; break;
+					case 'f': formated = true; break;
+					case 'r': shouldrun = true; break;
+					case 'n': warningsareerrors = true; break;
+
 					case 'c':
 						shouldcompile = true;
 						shouldrun = false;
 						runstring = false;
 						break;
 
-					case 'r':
-						shouldrun = true;
-						break;
 
 					case 's':
 						shouldcompile = false;
 						shouldrun = false;
 						runstring = true;
-						break;
-
-					case 'd':
-						debug = false;
-						break;
-
-					case 'f':
-						formated = true;
 						break;
 
 					case 'o':
@@ -172,26 +169,27 @@ int main(int argc, char* argv[]) {
 						printf("-r -- run compiled code after compile, add after -c flag\n");
 						printf("-s -- run string, all arguments after that will be converted read as code, watch out with quotes\n");
 						printf("-f -- formated output\n");
+						printf("-n -- treat warnings as errors\n");
+						printf("-w -- sleep until newline at stdin after tasks\n");
+						printf("-i -- open interpreter shell\n");
 						printf("last argument should be the file you want to run\n");
 						printf("If you just want to execute a file, just supply the filename\n");
 						printf("\n");
 						printf("Examples:\n");
-						printf("bsexec -cdro compiled.cbs humancode.bs\n");
+						printf("bsexec -cdrwo compiled.cbs humancode.bs\n");
 						printf("bsexec humancode.bs\n");
 						printf("bsexec -s \"print(\\\"hello\\\")\"\n");
-						printf("bsexec -cdo out1.cbs in1.bs -o out2.cbs in2.bs -o out3.cbs in3.bs\n");
+						printf("bsexec -cdwo out1.cbs in1.bs -o out2.cbs in2.bs -o out3.cbs in3.bs\n");
 						return 0;
 				}
 			}
 		} else {
+			openshell = false;
+
 			if (shouldcompile) {
 				Scratch::CFileStream fs;
 				if (!fs.Open(arg.c_str(), "rb")) {
-					if (formated) {
-						fprintf(stderr, "ERROR::Compiling:%s:?:Cannot open file\n", arg.c_str());
-					} else {
-						fprintf(stderr, "Error while compiling '%s:?': Cannot open file\n", arg.c_str());
-					}
+					OUTPUT_ERROR("Compiling", arg.c_str(), -1, "Cannot open file");
 					return 0;
 				}
 
@@ -202,24 +200,32 @@ int main(int argc, char* argv[]) {
 				unsigned char* bytecode;
 
 				try {
-					bytecode = BromScript::Compiler::Run(arg.c_str(), buff, filesize, &filesize, debug, true);
+					bytecode = BromScript::Compiler::Run(arg.c_str(), buff, filesize, &filesize, debug, true, warnings);
 				} catch (BromScript::CompilerException err) {
-					if (formated) {
-						fprintf(stderr, "ERROR::Compiling:%s:%d:%s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					OUTPUT_ERROR("Compiling", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					DOSLEEPIFNEEDED;
+					return 0;
+				}
+
+				for (int i2 = 0; i2 < warnings.Count; i2++) {
+					BromScript::CompilerException w = warnings[i2];
+					if (warningsareerrors) {
+						OUTPUT_ERROR("Compiling", w.CurrentFile.str_szBuffer, w.CurrentLine, w.Message.str_szBuffer);
 					} else {
-						fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+						OUTPUT_WARNING("Compiling", w.CurrentFile.str_szBuffer, w.CurrentLine, w.Message.str_szBuffer);
 					}
+				}
+
+				if (warningsareerrors && warnings.Count > 0) {
+					DOSLEEPIFNEEDED;
 					return 0;
 				}
 
 				remove(outname.c_str());
 				FILE* f = fopen(outname.c_str(), "wb");
 				if (f == null) {
-					if (formated) {
-						fprintf(stderr, "ERROR::Compiling:%s:?:Cannot open file\n", outname.c_str());
-					} else {
-						fprintf(stderr, "Error while compiling '%s:?': Cannot open file\n", outname.c_str());
-					}
+					OUTPUT_ERROR("Compiling", outname.c_str(), -1, "Cannot write file");
+					DOSLEEPIFNEEDED;
 					return 0;
 				}
 
@@ -229,6 +235,7 @@ int main(int argc, char* argv[]) {
 				delete[] bytecode;
 				delete[] buff;
 
+				OUTPUT_NOTICE("Compiling", arg.c_str(), Scratch::CString::Format("Done compiling to %s", outname.c_str()));
 				arg = outname;
 			}
 
@@ -244,30 +251,30 @@ int main(int argc, char* argv[]) {
 				} catch (BromScript::RuntimeException err) {
 					BromScript::Function* func = bsi.GetCurrentFunction();
 					if (func != null) {
-						if (formated) {
-							fprintf(stderr, "ERROR::Runtime:%s:%d:%s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
-						} else {
-							fprintf(stderr, "Runtime error '%s:%d': %s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
-						}
+						OUTPUT_ERROR("Runtime", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
 					} else {
-						if (formated) {
-							fprintf(stderr, "ERROR::Runtime:?:?:%s\n", err.Message.str_szBuffer);
-						} else {
-							fprintf(stderr, "Runtime error '?:?': %s\n", err.Message.str_szBuffer);
-						}
+						OUTPUT_ERROR("Runtime", "?", -1, err.Message.str_szBuffer);
 					}
+
+					DOSLEEPIFNEEDED;
 					return 0;
 				} catch (BromScript::CompilerException err) {
-					if (formated) {
-						fprintf(stderr, "ERROR::Compiling:%s:%d:%s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
-					} else {
-						fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
-					}
+					OUTPUT_ERROR("Compiling", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					DOSLEEPIFNEEDED;
 					return 0;
 				}
+
+				OUTPUT_NOTICE("Runtime", arg.c_str(), Scratch::CString::Format("Done executing %s", arg.c_str()));
+			}
+
+			if (i + 1 == argc) {
+				DOSLEEPIFNEEDED;
+				return 0;
 			}
 		}
 	}
+
+	if (!openshell && !forceopenshell) return 0;
 
 	BromScript::Instance bsi;
 	bsi.LoadDefaultLibaries();
@@ -316,18 +323,18 @@ int main(int argc, char* argv[]) {
 		} catch (BromScript::RuntimeException err) {
 			BromScript::Function* func = bsi.GetCurrentFunction();
 			if (func != null) {
-				fprintf(stderr, "Runtime error '%s:%d': %s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
+				OUTPUT_ERROR("Runtime", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
 			} else {
-				fprintf(stderr, "Runtime error %s\n", err.Message.str_szBuffer);
+				OUTPUT_ERROR("Runtime", "?", -1, err.Message.str_szBuffer);
 			}
 		} catch (BromScript::CompilerException err) {
-			fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+			OUTPUT_ERROR("Compiling", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
 		}
 
 		printf("> ");
 		delete strptr;
 
-		}
+	}
 
 	return 0;
-	}
+}
