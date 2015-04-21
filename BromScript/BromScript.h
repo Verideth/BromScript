@@ -33,6 +33,7 @@
 #include "Objects/CompilerException.h"
 #include "Objects/RuntimeException.h"
 #include "Managers/Compiler.h"
+#include "Managers/Debugger.h"
 #include "Managers/Instance.h"
 #include "Managers/Executer.h"
 #include "Managers/Converter.h"
