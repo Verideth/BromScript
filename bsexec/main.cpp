@@ -71,6 +71,7 @@ int main(int argc, char* argv[]) {
 	bool shouldrun = true;
 	bool debug = true;
 	bool runstring = false;
+	bool formated = false;
 
 	int outi = -1;
 
@@ -96,13 +97,25 @@ int main(int argc, char* argv[]) {
 				} catch (BromScript::RuntimeException err) {
 					BromScript::Function* func = bsi.GetCurrentFunction();
 					if (func != null) {
-						fprintf(stderr, "Runtime error '%s:%d': %s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
+						if (formated) {
+							fprintf(stderr, "ERROR::Runtime:%s:%d:%s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
+						} else {
+							fprintf(stderr, "Runtime error '%s:%d': %s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
+						}
 					} else {
-						fprintf(stderr, "Runtime error %s\n", err.Message.str_szBuffer);
+						if (formated) {
+							fprintf(stderr, "ERROR::Runtime:?:?:%s\n", err.Message.str_szBuffer);
+						} else {
+							fprintf(stderr, "Runtime error '?:?': %s\n", err.Message.str_szBuffer);
+						}
 					}
 
 				} catch (BromScript::CompilerException err) {
-					fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					if (formated) {
+						fprintf(stderr, "ERROR::Compiling:%s:%d:%s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					} else {
+						fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					}
 				}
 
 				return 0;
@@ -134,6 +147,10 @@ int main(int argc, char* argv[]) {
 						debug = false;
 						break;
 
+					case 'f':
+						formated = true;
+						break;
+
 					case 'o':
 						i++;
 
@@ -149,14 +166,20 @@ int main(int argc, char* argv[]) {
 
 					case 'h':
 						printf("No arguments for shell\n");
-						printf("-c = compile\n");
-						printf("-d = add debug bytecode\n");
-						printf("-o = outfile for compiler, defaults to 'out.cbs'\n");
-						printf("-r = run compiled code after compile, add after -c flag\n");
-						printf("-s = run string, all arguments after that will be converted read as code, watch out with quotes\n");
+						printf("-c -- compile\n");
+						printf("-d -- diable debug bytecode\n");
+						printf("-o -- outfile for compiler, defaults to 'out.cbs'\n");
+						printf("-r -- run compiled code after compile, add after -c flag\n");
+						printf("-s -- run string, all arguments after that will be converted read as code, watch out with quotes\n");
+						printf("-f -- formated output\n");
 						printf("last argument should be the file you want to run\n");
-						printf("You can combine them too: bsexec -cdro compiled.cbs humancode.bs\n");
 						printf("If you just want to execute a file, just supply the filename\n");
+						printf("\n");
+						printf("Examples:\n");
+						printf("bsexec -cdro compiled.cbs humancode.bs\n");
+						printf("bsexec humancode.bs\n");
+						printf("bsexec -s \"print(\\\"hello\\\")\"\n");
+						printf("bsexec -cdo out1.cbs in1.bs -o out2.cbs in2.bs -o out3.cbs in3.bs\n");
 						return 0;
 				}
 			}
@@ -164,7 +187,11 @@ int main(int argc, char* argv[]) {
 			if (shouldcompile) {
 				Scratch::CFileStream fs;
 				if (!fs.Open(arg.c_str(), "rb")) {
-					fprintf(stderr, "Error while compiling '%s:%d': Cannot open file '%s'\n", arg.c_str(), -1, arg.c_str());
+					if (formated) {
+						fprintf(stderr, "ERROR::Compiling:%s:?:Cannot open file\n", arg.c_str());
+					} else {
+						fprintf(stderr, "Error while compiling '%s:?': Cannot open file\n", arg.c_str());
+					}
 					return 0;
 				}
 
@@ -177,12 +204,25 @@ int main(int argc, char* argv[]) {
 				try {
 					bytecode = BromScript::Compiler::Run(arg.c_str(), buff, filesize, &filesize, debug, true);
 				} catch (BromScript::CompilerException err) {
-					fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					if (formated) {
+						fprintf(stderr, "ERROR::Compiling:%s:%d:%s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					} else {
+						fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					}
 					return 0;
 				}
 
 				remove(outname.c_str());
 				FILE* f = fopen(outname.c_str(), "wb");
+				if (f == null) {
+					if (formated) {
+						fprintf(stderr, "ERROR::Compiling:%s:?:Cannot open file\n", outname.c_str());
+					} else {
+						fprintf(stderr, "Error while compiling '%s:?': Cannot open file\n", outname.c_str());
+					}
+					return 0;
+				}
+
 				fwrite(bytecode, 1, filesize, f);
 				fclose(f);
 
@@ -204,21 +244,26 @@ int main(int argc, char* argv[]) {
 				} catch (BromScript::RuntimeException err) {
 					BromScript::Function* func = bsi.GetCurrentFunction();
 					if (func != null) {
-						fprintf(stderr, "Runtime error '%s:%d': %s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
+						if (formated) {
+							fprintf(stderr, "ERROR::Runtime:%s:%d:%s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
+						} else {
+							fprintf(stderr, "Runtime error '%s:%d': %s\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
+						}
 					} else {
-						fprintf(stderr, "Runtime error %s\n", err.Message.str_szBuffer);
+						if (formated) {
+							fprintf(stderr, "ERROR::Runtime:?:?:%s\n", err.Message.str_szBuffer);
+						} else {
+							fprintf(stderr, "Runtime error '?:?': %s\n", err.Message.str_szBuffer);
+						}
 					}
-
-					return 0;
 				} catch (BromScript::CompilerException err) {
-					fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
-					return 0;
+					if (formated) {
+						fprintf(stderr, "ERROR::Compiling:%s:%d:%s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					} else {
+						fprintf(stderr, "Error while compiling '%s:%d': %s\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+					}
 				}
 			}
-
-			// -cdro ../examples/compiled.cbs ../examples/humancode.bs
-
-			return 0;
 		}
 	}
 
@@ -280,7 +325,7 @@ int main(int argc, char* argv[]) {
 		printf("> ");
 		delete strptr;
 
-	}
+		}
 
 	return 0;
-}
+	}
