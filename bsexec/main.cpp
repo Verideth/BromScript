@@ -126,9 +126,9 @@ void OutputError(const char* type, const char* file, int line, const char* msg) 
 
 void OutputNotice(const char* type, const char* file, const char* msg) {
 	if (formated) {
-		fprintf(stderr, "NOTICE::%s:%s:%d:%s\n", type, file, msg);
+		fprintf(stderr, "NOTICE::%s:%s:%s\n", type, file, msg);
 	} else {
-		fprintf(stderr, "%s notice::%s:%d:%s\n", type, file, msg);
+		fprintf(stderr, "%s notice::%s:%s\n", type, file, msg);
 	}
 }
 
@@ -218,11 +218,11 @@ int main(int argc, char* argv[]) {
 					case 'h':
 						printf("No arguments for shell\n");
 						printf("-c -- compile\n");
-						printf("-d -- diable debug bytecode\n");
+						printf("-d -- disable debug bytecode\n");
 						printf("-o -- outfile for compiler, defaults to 'out.cbs'\n");
 						printf("-r -- run compiled code after compile, add after -c flag\n");
 						printf("-s -- run string, all arguments after that will be converted read as code, watch out with quotes\n");
-						printf("-f -- formated output\n");
+						printf("-f -- formatted output\n");
 						printf("-n -- treat warnings as errors\n");
 						printf("-w -- sleep until newline at stdin after tasks\n");
 						printf("-i -- open interpreter shell\n");
