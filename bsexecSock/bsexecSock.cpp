@@ -13,36 +13,54 @@
 
 using namespace Scratch;
 
-CString CurrentOutput;
+#define INPUT_LIMIT 10000
+#define OUTPUT_LIMIT 10000
+
+char* OutputPtr = new char[OUTPUT_LIMIT];
+int OutputPos = 0;
+
 CString CurrentCode;
 BromScript::Instance* CurrentBSI;
 bool DoneWithScript = false;
 mutex outputlock;
 
-BS_ERRORFUNCTION(errfunc){
-	outputlock.lock();
-	CurrentOutput += "\n[red]BromScript error!\n";
+void AddOutput(CString str) {
+	if (OutputPos == OUTPUT_LIMIT) return;
 
-	for (int i = 0; i < stacksize; i++) {
-		CurrentOutput += Scratch::CString::Format("SID: %d, File: %s:%d, Function: %s\n", i, stack[i].Filename.str_szBuffer, stack[i].LineNumber, stack[i].Func->Name.str_szBuffer);
+	int len = str.Size();
+
+	outputlock.lock();
+	if (OutputPos + len > OUTPUT_LIMIT) {
+		len = OUTPUT_LIMIT - OutputPos;
+		if (len == 0) {
+			return;
+		}
 	}
 
-	CurrentOutput += Scratch::CString::Format("Message: %s", msg);
-	CurrentOutput += "[/red]";
+	memcpy((void*)(OutputPtr + OutputPos), str.str_szBuffer, len);
+	OutputPos += len;
 	outputlock.unlock();
 }
 
-BS_FUNCTION(printoverride) {
-	outputlock.lock();
-	for (int i = 0; i < args->Count; i++) {
-		if (i > 0)
-			CurrentOutput += '\t';
+BS_ERRORFUNCTION(errfunc){
+	AddOutput("\n[red]BromScript error!\n");
 
-		CurrentOutput += BromScript::Converter::VariableToString(bsi, args->GetVariable(i));
+	for (int i = 0; i < stacksize; i++) {
+		AddOutput(Scratch::CString::Format("SID: %d, File: %s:%d, Function: %s\n", i, stack[i].Filename.str_szBuffer, stack[i].LineNumber, stack[i].Func->Name.str_szBuffer));
 	}
 
-	CurrentOutput += "\n";
-	outputlock.unlock();
+	AddOutput(Scratch::CString::Format("Message: %s[/red]", msg));
+}
+
+BS_FUNCTION(printoverride) {
+	for (int i = 0; i < args->Count; i++) {
+		if (i > 0)
+			AddOutput('\t');
+
+		AddOutput(BromScript::Converter::VariableToString(bsi, args->GetVariable(i)));
+	}
+
+	AddOutput("\n");
 
 	return null;
 }
@@ -50,23 +68,19 @@ BS_FUNCTION(printoverride) {
 void ThreadedCodeExec(){
 	try{
 		BromScript::Variable* var = CurrentBSI->DoString("inputbox", CurrentCode);
-		outputlock.lock();
 		if (var != null && var->Type != BromScript::VariableType::Null) {
-			CurrentOutput += var->ToString();
+			AddOutput(var->ToString());
 		}
 	} catch (BromScript::RuntimeException err) {
-		outputlock.lock();
 		BromScript::Function* func = CurrentBSI->GetCurrentFunction();
 		if (func != null) {
-			CurrentOutput += CString::Format("[red]Runtime error '%s:%d': %s[/red]\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer);
+			AddOutput(CString::Format("[red]Runtime error '%s:%d': %s[/red]\n", func->Filename.str_szBuffer, func->CurrentSourceFileLine, err.Message.str_szBuffer));
 		} else {
-			CurrentOutput += CString::Format("[red]Runtime error %s[/red]\n", err.Message.str_szBuffer);
+			AddOutput(CString::Format("[red]Runtime error %s[/red]\n", err.Message.str_szBuffer));
 		}
 	} catch (BromScript::CompilerException err) {
-		outputlock.lock();
-		CurrentOutput += CString::Format("[red]Error while compiling '%s:%d': %s[/red]\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
+		AddOutput(CString::Format("[red]Error while compiling '%s:%d': %s[/red]\n", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer));
 	}
-	outputlock.unlock();
 
 	DoneWithScript = true;
 }
@@ -77,13 +91,13 @@ void HandleC(EzSock* c){
 	int len = 0;
 	recv(c->sock, (char*)&len, 4, 0);
 
-	if (len > 10000) {
-		printf("Rejected, code too long (%d)", len);
+	if (len > INPUT_LIMIT) {
+		printf("Rejected, code too long (%d)\n", len);
 		return;
 	}
 
-	if (len < 0) {
-		printf("Rejected, invalid code length");
+	if (len <= 0) {
+		printf("Rejected, invalid code length\n");
 		return;
 	}
 
@@ -91,7 +105,7 @@ void HandleC(EzSock* c){
 	buff[len] = 0;
 	recv(c->sock, buff, len, 0);
 
-	CurrentOutput = "";
+	OutputPos = 0;
 	CurrentCode.str_szBuffer = buff;
 
 	printf("Got code:\n%s\n", CurrentCode.str_szBuffer);
@@ -126,29 +140,28 @@ void HandleC(EzSock* c){
 		CurrentBSI->KillScriptThreaded = true;
 		CurrentBSI->Error("Excecution limit exceeded.");
 	}
+	
 
-	outputlock.lock();
-	// be sure we're doing printing stuff
-	outputlock.unlock();
-
-	len = CurrentOutput.Size() + 4;
+	len = OutputPos + 4;
 	send(c->sock, (const char*)&len, 4, 0);
 	len -= 4;
 	send(c->sock, (const char*)&len, 4, 0);
 
-	send(c->sock, CurrentOutput.str_szBuffer, len, 0);
+	send(c->sock, OutputPtr, OutputPos, 0);
 
-	printf("Output:\n%s\n", CurrentOutput.str_szBuffer);
+	OutputPtr[OutputPos] = null;
+	printf("Output:\n%s\n", OutputPtr);
+	OutputPos = 0;
 
 	delete[] CurrentCode.str_szBuffer;
-	CurrentOutput = "";
+	CurrentCode.str_szBuffer = CString::str_szEmpty;
 
 	delete CurrentBSI;
 	CurrentBSI = null;
 }
 
 LONG WINAPI OurCrashHandler(EXCEPTION_POINTERS* errinfo) {
-	printf("Emergecny dump to lastcode.bs\n");
+	printf("Emergency dump to lastcode.bs\n");
 
 	remove("lastcode.bs");
 	FILE* f = fopen("lastcode.bs", "wb");
@@ -170,7 +183,7 @@ int main(int argc, char* argv[])
 	EzSock c;
 
 	while(true){
-		Sleep(1);
+		Sleep(10);
 
 		if (!s.accept(&c)){
 			continue;
