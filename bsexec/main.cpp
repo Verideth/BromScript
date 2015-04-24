@@ -254,7 +254,7 @@ int main(int argc, char* argv[]) {
 				unsigned char* bytecode;
 
 				try {
-					bytecode = BromScript::Compiler::Run(arg.c_str(), buff, filesize, &filesize, debug, true, warnings);
+					bytecode = BromScript::Compiler::Run(outname.c_str(), buff, filesize, &filesize, debug, true, warnings);
 				} catch (BromScript::CompilerException err) {
 					OutputError("Compiling", err.CurrentFile.str_szBuffer, err.CurrentLine, err.Message.str_szBuffer);
 					return DoSleepIfNeeded();
