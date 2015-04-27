@@ -1,3 +1,18 @@
+tbl = {}
+tbl2 = {}
+function tbl.a(){
+	return function(){
+		function tbl2.b(){
+			return this.c
+		}
+		
+		return tbl2
+	}
+}
+
+tbl.a()().c = "good"
+if (tbl.a()().b() != "good") error("Table set/call invalid!")
+
 #set preproctestif jup
 #define preprocdef "jup"
 
@@ -11,33 +26,25 @@ for (local i = 0, i < 200, i++) tbl[i] = true
 for (local i = 0, i < 200, i++) tbl[i] = null
 if (#tbl != 0) error("Tbl Count or remove wrong: " + #tbl)
 
-tbl = {}
-tbl2 = {}
-function tbl.a(){ return function(){ function tbl2.b(){ return tbl2.c }  return tbl2 } }
-if (tbl.a()()["b"]() != null) error("Table call invalid!")
-if (tbl["a"]()()["b"]() != null) error("Table call invalid!")
 
-tbl.a()().c = "good"
-if (tbl.a()().b() != "good") error("Table set/call invalid!")
-
-if (1 == 1) {} else {print("if wrong")}
-if (2 == 1) {print("else wrong")} else {}
-if (3 == 1) {print("else if wrong")} elseif (2 + 2 == 4) {} else {print("else if wrong")}
+if (2 == 1) {error("else wrong")} else {}
+if (3 == 1) {error("else if wrong")} elseif (2 + 2 == 4) {} else {error("else if wrong")}
 
 local backtest = false
 function a(){
-	error("Rewind or goto invalid")
+	error("goto function jump invalid")
 	a:
-	rewind // do note, if we don't rewind, we're gonna have a bad time. (only applies when jumping outside of current function)
-	error("Rewind or goto invalid")
+	goto b
+	error("goto function jump invalid")
 }
 
 function b(){
 	goto a
+	b:
 	backtest = true
 }
 b()
-if (!backtest) error("Rewind or goto invalid")
+if (!backtest) error("goto function jump invalid")
 
 local labelcheck = false
 goto label_after
@@ -104,25 +111,19 @@ local i = 0
 while(i < 5){i++}
 if (i != 5) error("while loop invalid or ++ OP invalid!")
 
-for (local i = 0, i < 5, i++){}
+for (local i = 0, i < 5, i++) {}
 if (i != 5) error("while loop invalid or ++ OP invalid!")
 
 foreach (k, v, {1, 2, 3, 4, 5}){ if (k == null || v == null) error("foreach invalid") }
 foreach (k, v, {a = 1, b = 2, c = 3, d = 4, e = 5}){ if (k == null || v == null) error("foreach indexed invalid") }
 
-local tmp = 0
-loop(i, 10) tmp++
-if (tmp != 10) error("Loop is wrong")
-
-tmp = 0
-loop(i, true) {
-	if (i >= 10) {
-		break
-	}
-	
-	tmp = i
+local tbl = {}
+tbl.b = {}
+tbl.b.b = {}
+tbl.b.b.a = function() {
+	return "world"
 }
-if (tmp != 10) error("Loop is wrong")
+if (tbl.b.b.a() != "world") error("Table set/call invalid!")
 
 tbl = {
 	a = "test",
@@ -138,5 +139,13 @@ foreach(k, v, tbl){if (k == 2) error("Tbl index remove failed!")}
 
 function ret3(a, b, c){ return "G" * (a + b + c) }
 if (ret3(1, 1, 1) != "GGG") error("func call or str mult invalid")
+
+local enumtest = enum {
+	zero,
+	one,
+	two = 2,
+	three
+}
+if (enumtest.one != 1) error("Enum wrong")
 
 print("All tests passed!")

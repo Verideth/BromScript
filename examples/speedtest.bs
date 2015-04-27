@@ -1,7 +1,9 @@
+local i = 0
 local derp = 0;
 local lastsec = time()
+local runs = 0
 
-loop(i, true){
+while(true){
 	derp++
 	
 	if (derp > 0) {
@@ -13,5 +15,10 @@ loop(i, true){
 		lastsec = cursec
 		print(i)
 		i = 0;
+		if (runs++ > 5) {
+			break
+		}
 	}
+	
+	i++
 }
