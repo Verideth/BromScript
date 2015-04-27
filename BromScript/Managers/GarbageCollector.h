@@ -20,6 +20,7 @@
 #define BROMSCRIPT_GARBAGECOLLECTION_INCLUDED
 
 #include "../SIF.h"
+#include "../Objects/Pool.h"
 #include "../Objects/Variable.h"
 
 namespace BromScript{
@@ -33,15 +34,21 @@ namespace BromScript{
 
 		static BS_FUNCTION(RunWrapper);
 
-		Variable* RegisterVariable();
+		void SelfDestruct();
+		Variable* GetPooledVariable();
 		Variable* RegisterVariable(Variable* var);
 	private:
 		int FrameSkip;
+		Pool** Pools;
+		int PoolsSize;
+		int CurrentPool;
+
 		Variable** Buffer;
 		int BufferSize;
 		int NullStart;
 
 		void AllocateMoreSpace();
+		void AllocateMorePools();
 	};
 }
 #endif

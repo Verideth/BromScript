@@ -36,9 +36,9 @@ namespace BromScript{
 		namespace Global{
 			BS_FUNCTION(Environment) {
 #ifdef _MSC_VER
-				return Converter::ToVariable("Windows");
+				return Converter::ToVariable(bsi, "Windows");
 #else
-				return Converter::ToVariable("Linux");
+				return Converter::ToVariable(bsi, "Linux");
 #endif
 			}
 
@@ -66,7 +66,7 @@ namespace BromScript{
 
 				tryfunc->Run(&vars);
 
-				return Converter::ToVariable(!args->ErrorOccured());
+				return Converter::ToVariable(bsi, !args->ErrorOccured());
 			}
 
 			BS_FUNCTION(Print) {
@@ -86,12 +86,12 @@ namespace BromScript{
 
 			BS_FUNCTION(ToString) {
 				if (args->Count != 1) { BS_THROW_ERROR(args, "Expected variable, got nothing!"); return null; }
-				return Converter::ToVariable(Converter::VariableToString(bsi, args->GetVariable(0)));
+				return Converter::ToVariable(bsi, Converter::VariableToString(bsi, args->GetVariable(0)));
 			}
 
 			BS_FUNCTION(TypeOf) {
 				if (args->Count != 1) { BS_THROW_ERROR(args, "Expected variable, got nothing!"); return null; }
-				return Converter::ToVariable(Converter::TypeToString(args->GetVariable(0)));
+				return Converter::ToVariable(bsi, Converter::TypeToString(args->GetVariable(0)));
 			}
 
 			BS_FUNCTION(Time) {
@@ -100,7 +100,7 @@ namespace BromScript{
 				time /= 1000;
 
 				double ret = (double)time + ms;
-				return Converter::ToVariable(ret);
+				return Converter::ToVariable(bsi, ret);
 			}
 
 			BS_FUNCTION(Include) {

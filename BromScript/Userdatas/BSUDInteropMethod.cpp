@@ -108,12 +108,12 @@ namespace BromScript{
 
 				switch (iopm->ReturnType) {
 					case -1: return null;
-					case MemberType::Bool: return Converter::ToVariable(retdata == 1 ? true : false);
-					case MemberType::Byte: return Converter::ToVariable(retdata);
-					case MemberType::Short: return Converter::ToVariable((short)retdata);
-					case MemberType::Int: return Converter::ToVariable(retdata);
-					case MemberType::Float: return Converter::ToVariable(*(float*)&retdata);
-					case MemberType::String: return Converter::ToVariable((char*)retdata);
+					case MemberType::Bool: return Converter::ToVariable(bsi, retdata == 1 ? true : false);
+					case MemberType::Byte: return Converter::ToVariable(bsi, retdata);
+					case MemberType::Short: return Converter::ToVariable(bsi, (short)retdata);
+					case MemberType::Int: return Converter::ToVariable(bsi, retdata);
+					case MemberType::Float: return Converter::ToVariable(bsi, *(float*)&retdata);
+					case MemberType::String: return Converter::ToVariable(bsi, (char*)retdata);
 				}
 
 				return null;
@@ -127,7 +127,7 @@ namespace BromScript{
 				Userdata* vd = bsi->RegisterUserdata("InteropMethod", BROMSCRIPT_USERDATA_INTEROPMETHOD_TYPE, sizeof(CInteropMethod), null, DTOR);
 
 				vd->RegisterFunction("Call", Call);
-				vd->RegisterOperator(Misc::ArithmaticFuncs::Call, Call);
+				vd->RegisterOperator(Operators::ArithmeticCall, Call);
 			}
 		}
 	}

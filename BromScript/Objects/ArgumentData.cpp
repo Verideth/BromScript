@@ -21,15 +21,42 @@
 using namespace Scratch;
 
 namespace BromScript {
-	ArgumentData::ArgumentData(void) :Caller(null), BromScript(null), Count(0) {
+	ArgumentData::ArgumentData(void) :Caller(null), BromScript(null), Count(0), ThisObject(null) {
 	}
 
 	ArgumentData::~ArgumentData(void) {
+		this->Clear();
 	}
 
 	VariableType::Enum ArgumentData::GetType(int index) {
 		if (index >= this->Count) return VariableType::Null;
 		return this->Vars[index]->Type;
+	}
+
+	void ArgumentData::Clear() {
+		for (int i = 0; i < this->Vars.Count; i++) {
+			BS_REF_DECREESE(this->Vars.RemoveAt(i));
+		}
+
+		this->Count = 0;
+
+		if (this->ThisObject != null) {
+			BS_REF_DECREESE(this->ThisObject);
+			this->ThisObject = null;
+		}
+	}
+
+	void ArgumentData::SetThisObject(Variable* var) {
+		if (this->ThisObject != null) {
+			BS_REF_DECREESE(this->ThisObject);
+			this->ThisObject = null;
+		}
+
+		if (var != null) {
+			BS_REF_INCREESE(var);
+		}
+
+		this->ThisObject = var;
 	}
 
 	bool ArgumentData::ErrorOccured(void) {
@@ -139,19 +166,26 @@ namespace BromScript {
 	}
 
 	void ArgumentData::SetVariableData(List<Variable*>* vars) {
+		this->Clear();
 		this->Count = vars->Count;
-		this->Vars.Clear();
-		for (int i = 0; i < vars->Count; i++)
-			this->Vars.Add(vars->Get(i));
+
+		for (int i = 0; i < vars->Count; i++){
+			Variable* var = vars->Get(i);
+
+			BS_REF_INCREESE(var);
+			this->Vars.Add(var);
+		}
 	}
 
 	void ArgumentData::InsertVariable(int pos, Variable* var) {
 		this->Count++;
+		BS_REF_INCREESE(var);
 		this->Vars.Insert(pos, var);
 	}
 
 	void ArgumentData::AddVariable(Variable* var) {
 		this->Count++;
+		BS_REF_INCREESE(var);
 		this->Vars.Add(var);
 	}
 

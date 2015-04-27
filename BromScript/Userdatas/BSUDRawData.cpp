@@ -54,7 +54,7 @@ namespace BromScript{
 					return null;
 				}
 
-				return Converter::ToVariable(*(unsigned char*)(rd->Data + offset));
+				return Converter::ToVariable(bsi, *(unsigned char*)(rd->Data + offset));
 			}
 
 			BS_FUNCTION(GetShort) {
@@ -69,7 +69,7 @@ namespace BromScript{
 					return null;
 				}
 
-				return Converter::ToVariable(*(short*)(rd->Data + offset));
+				return Converter::ToVariable(bsi, *(short*)(rd->Data + offset));
 			}
 
 			BS_FUNCTION(GetInt) {
@@ -84,7 +84,7 @@ namespace BromScript{
 					return null;
 				}
 
-				return Converter::ToVariable(*(int*)(rd->Data + offset));
+				return Converter::ToVariable(bsi, *(int*)(rd->Data + offset));
 			}
 
 			BS_FUNCTION(GetFloat) {
@@ -99,7 +99,7 @@ namespace BromScript{
 					return null;
 				}
 
-				return Converter::ToVariable(*(float*)(rd->Data + offset));
+				return Converter::ToVariable(bsi, *(float*)(rd->Data + offset));
 			}
 
 			BS_FUNCTION(SetByte) {
@@ -178,7 +178,7 @@ namespace BromScript{
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_RAWDATA_TYPE, true)) return null;
 
 				CRawData* rd = (CRawData*)args->GetThisObjectData();
-				return Converter::ToVariable((int)rd->Data);
+				return Converter::ToVariable(bsi, (int)rd->Data);
 			}
 
 			void RegisterUD(BromScript::Instance* bsi) {

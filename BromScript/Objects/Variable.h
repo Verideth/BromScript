@@ -21,6 +21,7 @@
 
 #include "../SIF.h"
 #include "../Misc.h"
+#include "../Objects/PoolReference.h"
 
 namespace BromScript {
 	namespace VariableType{
@@ -33,11 +34,13 @@ namespace BromScript {
 		int Using;
 
 	public:
-		Variable(void);
-		~Variable(void);
+		Variable();
+		~Variable();
 
 		VariableType::Enum Type;
 		void* Value;
+
+		PoolReference PoolRef;
 
 		bool IsCpp;
 		bool DeleteOnDestruct;
@@ -63,10 +66,10 @@ namespace BromScript {
 
 		void IncreeseRefCount(int line, Scratch::CString file) {
 			char* padding = new char[this->Using + 1];
-			memset(padding, ' ', this->Using);
+			memset(padding, ' - ', this->Using);
 			padding[this->Using] = 0;
 
-			RefStackList.Add(Scratch::CString::Format("+ %s%s:%d", padding, file.str_szBuffer, line));
+			RefStackList.Add(Scratch::CString::Format("+ %d %s%s:%d", this->Using + 1, padding, file.str_szBuffer, line));
 			delete[] padding;
 
 			this->Using++;
@@ -81,7 +84,7 @@ namespace BromScript {
 			memset(padding, ' ', this->Using);
 			padding[this->Using] = 0;
 
-			RefStackList.Add(Scratch::CString::Format("+ %s%s:%d", padding, file.str_szBuffer, line));
+			RefStackList.Add(Scratch::CString::Format("- %d %s%s:%d", this->Using - 1, padding, file.str_szBuffer, line));
 			delete[] padding;
 
 			this->Using--;

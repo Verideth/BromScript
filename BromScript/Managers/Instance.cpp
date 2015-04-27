@@ -31,9 +31,9 @@ using namespace Scratch;
 
 namespace BromScript {
 	Instance::Instance() :CurrentIncludePath(""), CurrentStackIndex(0), Globals(new Table(this)), KillScriptThreaded(false), Debug(new Debugger(this)), ErrorCallback(null), IncludingInternalUserdata(false) {
-		this->_Default_Var_Null = this->GC.RegisterVariable();
-		this->_Default_Var_True = this->GC.RegisterVariable(Converter::ToVariable(true));
-		this->_Default_Var_False = this->GC.RegisterVariable(Converter::ToVariable(false));
+		this->_Default_Var_Null = this->GC.GetPooledVariable();
+		this->_Default_Var_True = this->GC.RegisterVariable(Converter::ToVariable(this, true));
+		this->_Default_Var_False = this->GC.RegisterVariable(Converter::ToVariable(this, false));
 
 		BS_REF_INCREESE(this->_Default_Var_Null);
 		BS_REF_INCREESE(this->_Default_Var_True);
@@ -62,14 +62,17 @@ namespace BromScript {
 
 		delete this->Globals;
 
-		while (this->RegisteredUserdataTypes.Count > 0)
-			delete this->RegisteredUserdataTypes.RemoveAt(0);
-
-		delete this->Debug;
 
 		BS_REF_DECREESE(this->_Default_Var_Null);
 		BS_REF_DECREESE(this->_Default_Var_True);
 		BS_REF_DECREESE(this->_Default_Var_False);
+
+		this->GC.SelfDestruct();
+
+		while (this->RegisteredUserdataTypes.Count > 0)
+			delete this->RegisteredUserdataTypes.RemoveAt(0);
+
+		delete this->Debug;
 	}
 
 	void Instance::SetVar(CString key, Variable* var) {
@@ -238,7 +241,7 @@ namespace BromScript {
 				}
 
 				Variable* ret = this->DoCode(filename, buff, filesize);
-				delete buff;
+				delete[] buff;
 
 				this->CurrentIncludePath = oldincp;
 				return ret;
@@ -320,6 +323,7 @@ namespace BromScript {
 
 	void Instance::Error(CString msg, int linenumber, const char* file) {
 		CallStack* stack = new CallStack[this->CurrentStackIndex];
+		int lastiserror = false;
 		for (int i = 0; i < this->CurrentStackIndex; i++) {
 			CallStack* s = this->CurrentStack[i];
 
@@ -340,6 +344,10 @@ namespace BromScript {
 				s->Filename = file + spos;
 			}
 
+			if (i + 1 == this->CurrentStackIndex && s->Name == "error") {
+				lastiserror = true;
+			}
+
 			stack[i] = *s;
 		}
 
@@ -348,7 +356,7 @@ namespace BromScript {
 		}
 
 		if (this->ErrorCallback != null) {
-			this->ErrorCallback(this, stack, this->CurrentStackIndex, msg);
+			this->ErrorCallback(this, stack, this->CurrentStackIndex - (lastiserror ? 1 : 0), msg);
 		}
 
 		delete[] stack;
@@ -376,7 +384,7 @@ namespace BromScript {
 		varfunc->Name = key;
 		varfunc->CurrentSourceFileLine = linenumber;
 
-		Variable* var = this->GC.RegisterVariable();
+		Variable* var = this->GC.GetPooledVariable();
 		var->Type = VariableType::Function;
 		var->Value = varfunc;
 
@@ -409,6 +417,16 @@ namespace BromScript {
 		return null;
 	}
 
+	Userdata* Instance::GetRegisteredUserdata(CString name) {
+		for (int i = 0; i < this->RegisteredUserdataTypes.Count; i++) {
+			if (this->RegisteredUserdataTypes[i]->Name == name) {
+				return this->RegisteredUserdataTypes[i];
+			}
+		}
+
+		return null;
+	}
+
 	Userdata* Instance::RegisterUserdata(CString name, int typeID, int typesize, BSFunctionCtor ctor, BSFunctionDtor dtor) {
 		if (typeID < 100 && !this->IncludingInternalUserdata)
 			throw "Cannot register Userdata with types below 100! (reserved for internal types)";
@@ -434,7 +452,7 @@ namespace BromScript {
 		func->Name = name;
 		func->IsCpp = true;
 
-		Variable* classvar = this->GC.RegisterVariable();
+		Variable* classvar = this->GC.GetPooledVariable();
 		classvar->Type = VariableType::Class;
 		classvar->Value = func;
 
@@ -462,7 +480,7 @@ namespace BromScript {
 
 		Table* gc = new Table(this);
 		gc->Set("Run", Converter::ToVariable(this, "Run", BromScript::GarbageCollector::RunWrapper));
-		this->SetVar("GC", Converter::ToVariable(gc));
+		this->SetVar("GC", Converter::ToVariable(this, gc));
 
 		Table* math = new Table(this);
 		math->Set("Random", Converter::ToVariable(this, "Random", BromScript::Libaries::Math::Random));
@@ -483,8 +501,8 @@ namespace BromScript {
 		math->Set("Neg", Converter::ToVariable(this, "Neg", BromScript::Libaries::Math::Neg));
 		math->Set("ToRadians", Converter::ToVariable(this, "ToRadians", BromScript::Libaries::Math::ToRadians));
 		math->Set("ToDegrees", Converter::ToVariable(this, "ToDegrees", BromScript::Libaries::Math::ToDegrees));
-		math->Set("Pi", Converter::ToVariable(BS_PI));
-		this->SetVar("Math", Converter::ToVariable(math));
+		math->Set("Pi", Converter::ToVariable(this, BS_PI));
+		this->SetVar("Math", Converter::ToVariable(this, math));
 
 		Table* console = new Table(this);
 		Table* consolecolors = new Table(this);
@@ -494,35 +512,35 @@ namespace BromScript {
 		console->Set("GetLine", Converter::ToVariable(this, "GetLine", BromScript::Libaries::Console::GetLine));
 		console->Set("Clear", Converter::ToVariable(this, "Clear", BromScript::Libaries::Console::Clear));
 
-		consolecolors->Set("Red", Converter::ToVariable((double)BromScript::Libaries::Console::ColorRed));
-		consolecolors->Set("Black", Converter::ToVariable((double)BromScript::Libaries::Console::ColorBlack));
-		consolecolors->Set("Blue", Converter::ToVariable((double)BromScript::Libaries::Console::ColorBlue));
-		consolecolors->Set("Cyan", Converter::ToVariable((double)BromScript::Libaries::Console::ColorCyan));
-		consolecolors->Set("Green", Converter::ToVariable((double)BromScript::Libaries::Console::ColorGreen));
-		consolecolors->Set("Yellow", Converter::ToVariable((double)BromScript::Libaries::Console::ColorYellow));
-		consolecolors->Set("Magenta", Converter::ToVariable((double)BromScript::Libaries::Console::ColorMagenta));
-		consolecolors->Set("Gray", Converter::ToVariable((double)BromScript::Libaries::Console::ColorGray));
-		consolecolors->Set("White", Converter::ToVariable((double)BromScript::Libaries::Console::ColorWhite));
+		consolecolors->Set("Red", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorRed));
+		consolecolors->Set("Black", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorBlack));
+		consolecolors->Set("Blue", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorBlue));
+		consolecolors->Set("Cyan", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorCyan));
+		consolecolors->Set("Green", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorGreen));
+		consolecolors->Set("Yellow", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorYellow));
+		consolecolors->Set("Magenta", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorMagenta));
+		consolecolors->Set("Gray", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorGray));
+		consolecolors->Set("White", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorWhite));
 #ifdef _MSC_VER
-		consolecolors->Set("DarkBlue", Converter::ToVariable((double)BromScript::Libaries::Console::ColorDarkBlue));
-		consolecolors->Set("DarkCyan", Converter::ToVariable((double)BromScript::Libaries::Console::ColorDarkCyan));
-		consolecolors->Set("DarkGreen", Converter::ToVariable((double)BromScript::Libaries::Console::ColorDarkGreen));
-		consolecolors->Set("DarkMagenta", Converter::ToVariable((double)BromScript::Libaries::Console::ColorDarkMagenta));
-		consolecolors->Set("DarkRed", Converter::ToVariable((double)BromScript::Libaries::Console::ColorDarkRed));
-		consolecolors->Set("DarkWhite", Converter::ToVariable((double)BromScript::Libaries::Console::ColorDarkWhite));
-		consolecolors->Set("DarkYellow", Converter::ToVariable((double)BromScript::Libaries::Console::ColorDarkYellow));
+		consolecolors->Set("DarkBlue", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorDarkBlue));
+		consolecolors->Set("DarkCyan", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorDarkCyan));
+		consolecolors->Set("DarkGreen", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorDarkGreen));
+		consolecolors->Set("DarkMagenta", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorDarkMagenta));
+		consolecolors->Set("DarkRed", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorDarkRed));
+		consolecolors->Set("DarkWhite", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorDarkWhite));
+		consolecolors->Set("DarkYellow", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorDarkYellow));
 #else
-		consolecolors->Set("DarkGray", Converter::ToVariable((double)BromScript::Libaries::Console::ColorDarkGray));
-		consolecolors->Set("LightRed", Converter::ToVariable((double)BromScript::Libaries::Console::ColorLightRed));
-		consolecolors->Set("LightGreen", Converter::ToVariable((double)BromScript::Libaries::Console::ColorLightGreen));
-		consolecolors->Set("LightYellow", Converter::ToVariable((double)BromScript::Libaries::Console::ColorLightYellow));
-		consolecolors->Set("LightBlue", Converter::ToVariable((double)BromScript::Libaries::Console::ColorLightBlue));
-		consolecolors->Set("LightMgenta", Converter::ToVariable((double)BromScript::Libaries::Console::ColorLightMgenta));
-		consolecolors->Set("LightCyan", Converter::ToVariable((double)BromScript::Libaries::Console::ColorLightCyan));
+		consolecolors->Set("DarkGray", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorDarkGray));
+		consolecolors->Set("LightRed", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorLightRed));
+		consolecolors->Set("LightGreen", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorLightGreen));
+		consolecolors->Set("LightYellow", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorLightYellow));
+		consolecolors->Set("LightBlue", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorLightBlue));
+		consolecolors->Set("LightMgenta", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorLightMgenta));
+		consolecolors->Set("LightCyan", Converter::ToVariable(this, (double)BromScript::Libaries::Console::ColorLightCyan));
 #endif
 
-		console->Set("Colors", Converter::ToVariable(consolecolors));
-		this->SetVar("Console", Converter::ToVariable(console));
+		console->Set("Colors", Converter::ToVariable(this, consolecolors));
+		this->SetVar("Console", Converter::ToVariable(this, console));
 
 		Table* string = new Table(this);
 		string->Set("ToChar", Converter::ToVariable(this, "ToChar", BromScript::Libaries::String::ToChar));
@@ -539,16 +557,17 @@ namespace BromScript {
 		string->Set("Replace", Converter::ToVariable(this, "Replace", BromScript::Libaries::String::Replace));
 		string->Set("ToLower", Converter::ToVariable(this, "ToLower", BromScript::Libaries::String::ToLower));
 		string->Set("ToUpper", Converter::ToVariable(this, "ToUpper", BromScript::Libaries::String::ToUpper));
-		this->SetVar("String", Converter::ToVariable(string));
+		this->SetVar("String", Converter::ToVariable(this, string));
 
 		Table* debug = new Table(this);
 		debug->Set("Print", Converter::ToVariable(this, "Print", BromScript::Libaries::Debug::Print));
 		debug->Set("Connect", Converter::ToVariable(this, "Connect", BromScript::Libaries::Debug::Connect));
 		debug->Set("Disconnect", Converter::ToVariable(this, "Disconnect", BromScript::Libaries::Debug::Disconnect));
 		debug->Set("Break", Converter::ToVariable(this, "Break", BromScript::Libaries::Debug::Break));
-		this->SetVar("Debug", Converter::ToVariable(debug));
+		this->SetVar("Debug", Converter::ToVariable(this, debug));
 
 		this->IncludingInternalUserdata = true;
+		BromScript::Userdatas::Iterator::RegisterUD(this);
 		BromScript::Userdatas::Socket::RegisterUD(this);
 		BromScript::Userdatas::Packet::RegisterUD(this);
 		BromScript::Userdatas::IO::RegisterUD(this);

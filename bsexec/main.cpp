@@ -252,7 +252,7 @@ int main(int argc, char* argv[]) {
 				fs.Close();
 
 				unsigned char* bytecode;
-
+				
 				try {
 					bytecode = BromScript::Compiler::Run(outname.c_str(), buff, filesize, &filesize, debug, true, warnings);
 				} catch (BromScript::CompilerException err) {

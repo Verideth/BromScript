@@ -28,7 +28,7 @@ namespace BromScript{
 		namespace String{
 			BS_FUNCTION(FromChar) {
 				if (!args->CheckType(0, VariableType::Number, true)) return null;
-				return Converter::ToVariable(CString((char)args->GetNumber(0)));
+				return Converter::ToVariable(bsi, CString((char)args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(ToChar) {
@@ -45,7 +45,7 @@ namespace BromScript{
 					return null;
 				}
 
-				return Converter::ToVariable((int)str[0]);
+				return Converter::ToVariable(bsi, (int)str[0]);
 			}
 
 			BS_FUNCTION(Split) {
@@ -57,9 +57,9 @@ namespace BromScript{
 
 				Table* tbl = new Table(args->BromScript);
 				for (int i = 0; i < arr.Count(); i++)
-					tbl->Set(CString((double)i), Converter::ToVariable(arr[i]));
+					tbl->Set(CString((double)i), Converter::ToVariable(bsi, arr[i]));
 
-				return Converter::ToVariable(tbl);
+				return Converter::ToVariable(bsi, tbl);
 			}
 
 			BS_FUNCTION(Sub) {
@@ -68,8 +68,8 @@ namespace BromScript{
 
 				if (args->Count == 3 && !args->CheckType(2, VariableType::Number, true)) return null;
 
-				if (args->Count == 3) return Converter::ToVariable(CString(args->GetString(0)).Substring((int)args->GetNumber(1), (int)args->GetNumber(2)));
-				else return Converter::ToVariable(CString(args->GetString(0)).Substring((int)args->GetNumber(1)));
+				if (args->Count == 3) return Converter::ToVariable(bsi, CString(args->GetString(0)).Substring((int)args->GetNumber(1), (int)args->GetNumber(2)));
+				else return Converter::ToVariable(bsi, CString(args->GetString(0)).Substring((int)args->GetNumber(1)));
 			}
 
 			BS_FUNCTION(IndexOf) {
@@ -80,9 +80,9 @@ namespace BromScript{
 				}
 
 				if (args->CheckType(1, VariableType::String)) {
-					return Converter::ToVariable(CString(args->GetString(0)).IndexOf(args->GetString(1), (int)args->GetNumber(2)));
+					return Converter::ToVariable(bsi, CString(args->GetString(0)).IndexOf(args->GetString(1), (int)args->GetNumber(2)));
 				} else if (args->CheckType(1, VariableType::Number)) {
-					return Converter::ToVariable(CString(args->GetString(0)).IndexOf((char)args->GetNumber(1), (int)args->GetNumber(2)));
+					return Converter::ToVariable(bsi, CString(args->GetString(0)).IndexOf((char)args->GetNumber(1), (int)args->GetNumber(2)));
 				} else {
 					BS_THROW_ERROR(args, "Expected 2(or 3) arguments (String, Char/String, [Number])!");
 					return null;
@@ -104,9 +104,9 @@ namespace BromScript{
 				}
 
 				if (args->CheckType(1, VariableType::String)) {
-					return Converter::ToVariable(str.IndexOf(args->GetString(1), spos));
+					return Converter::ToVariable(bsi, str.IndexOf(args->GetString(1), spos));
 				} else if (args->CheckType(1, VariableType::Number)) {
-					return Converter::ToVariable(str.IndexOf((char)args->GetNumber(1), spos));
+					return Converter::ToVariable(bsi, str.IndexOf((char)args->GetNumber(1), spos));
 				} else {
 					BS_THROW_ERROR(args, "Expected 2(or 3) arguments (String, Char/String, [Number])!");
 					return null;
@@ -116,30 +116,30 @@ namespace BromScript{
 			BS_FUNCTION(Left) {
 				if (!args->CheckType(0, VariableType::String, true)) return null;
 				if (!args->CheckType(1, VariableType::Number, true)) return null;
-				return Converter::ToVariable(CString(args->GetString(0)).Substring((int)args->GetNumber(1)));
+				return Converter::ToVariable(bsi, CString(args->GetString(0)).Substring((int)args->GetNumber(1)));
 			}
 
 			BS_FUNCTION(Right) {
 				if (!args->CheckType(0, VariableType::String, true)) return null;
 				if (!args->CheckType(1, VariableType::Number, true)) return null;
-				return Converter::ToVariable(CString(args->GetString(0)).Substring(0, (int)args->GetNumber(1) * -1));
+				return Converter::ToVariable(bsi, CString(args->GetString(0)).Substring(0, (int)args->GetNumber(1) * -1));
 			}
 
 			BS_FUNCTION(ToLower) {
 				if (!args->CheckType(0, VariableType::String, true)) return null;
-				return Converter::ToVariable(CString(args->GetString(0)).ToLower());
+				return Converter::ToVariable(bsi, CString(args->GetString(0)).ToLower());
 			}
 
 			BS_FUNCTION(ToUpper) {
 				if (!args->CheckType(0, VariableType::String, true)) return null;
-				return Converter::ToVariable(CString(args->GetString(0)).ToUpper());
+				return Converter::ToVariable(bsi, CString(args->GetString(0)).ToUpper());
 			}
 
 			BS_FUNCTION(Trim) {
 				if (!args->CheckType(0, VariableType::String, true)) return null;
 
 				if (args->Count == 1) {
-					return Converter::ToVariable(CString(args->GetString(0)).Trim());
+					return Converter::ToVariable(bsi, CString(args->GetString(0)).Trim());
 				} else {
 					if (!args->CheckType(1, VariableType::String, true)) return null;
 
@@ -155,7 +155,7 @@ namespace BromScript{
 						}
 					}
 
-					return Converter::ToVariable(str);
+					return Converter::ToVariable(bsi, str);
 				}
 			}
 
@@ -163,7 +163,7 @@ namespace BromScript{
 				if (!args->CheckType(0, VariableType::String, true)) return null;
 
 				if (args->Count == 1) {
-					return Converter::ToVariable(CString(args->GetString(0)).TrimLeft());
+					return Converter::ToVariable(bsi, CString(args->GetString(0)).TrimLeft());
 				} else {
 					if (!args->CheckType(1, VariableType::String, true)) return null;
 
@@ -179,7 +179,7 @@ namespace BromScript{
 						}
 					}
 
-					return Converter::ToVariable(str);
+					return Converter::ToVariable(bsi, str);
 				}
 			}
 
@@ -187,7 +187,7 @@ namespace BromScript{
 				if (!args->CheckType(0, VariableType::String, true)) return null;
 
 				if (args->Count == 1) {
-					return Converter::ToVariable(CString(args->GetString(0)).TrimRight());
+					return Converter::ToVariable(bsi, CString(args->GetString(0)).TrimRight());
 				} else {
 					if (!args->CheckType(1, VariableType::String, true)) return null;
 
@@ -203,7 +203,7 @@ namespace BromScript{
 						}
 					}
 
-					return Converter::ToVariable(str);
+					return Converter::ToVariable(bsi, str);
 				}
 			}
 
@@ -212,7 +212,7 @@ namespace BromScript{
 				if (!args->CheckType(1, VariableType::String, true)) return null;
 				if (!args->CheckType(2, VariableType::String, true)) return null;
 
-				return Converter::ToVariable(CString(args->GetString(0)).Replace(args->GetString(1), args->GetString(2)));
+				return Converter::ToVariable(bsi, CString(args->GetString(0)).Replace(args->GetString(1), args->GetString(2)));
 			}
 		}
 	}

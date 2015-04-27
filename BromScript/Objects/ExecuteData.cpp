@@ -21,11 +21,28 @@
 using namespace Scratch;
 
 namespace BromScript {
-	ExecuteData::ExecuteData(void) :HasReturnValue(false), Breaking(false), Continueing(false), FuncCallback(false), Returning(null), Reader(null), GotoDeptDiff(0), GotoReset(-1) {
+	ExecuteData::ExecuteData(void) : Reader(null), StackPos(0), StackSize(0), Stack(0) {
+		this->AllocateMoreSpace(32);
 	}
 
-
 	ExecuteData::~ExecuteData(void) {
-		delete this->Reader;
+		for (int i = 0; i < this->StackPos; i++) {
+			BS_REF_DECREESE(this->Stack[i]);
+		}
+
+		if (this->Reader != null) delete this->Reader;
+	}
+
+	void ExecuteData::AllocateMoreSpace(int num) {
+		this->StackSize += num;
+		Variable** newbuff = (Variable**)malloc(sizeof(Variable*) * this->StackSize);
+
+		if (this->Stack != null) {
+			memcpy(newbuff, this->Stack, sizeof(Variable*) * (this->StackSize - num));
+			free(this->Stack);
+		}
+
+		this->Stack = newbuff;
+		memset(this->Stack, this->StackPos * sizeof(Variable*), sizeof(Variable*) * (this->StackSize - this->StackPos));
 	}
 }

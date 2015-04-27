@@ -32,7 +32,7 @@ namespace BromScript{
 			}
 
 			BS_FUNCTION(Connect) {
-				return Converter::ToVariable(bsi->Debug->Connect());
+				return Converter::ToVariable(bsi, bsi->Debug->Connect());
 			}
 
 			BS_FUNCTION(Disconnect) {

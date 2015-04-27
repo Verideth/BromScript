@@ -23,6 +23,7 @@
 // config
 
 // uncomment if you want to enable reference debugging, use the BS_REF_INCREESE and BS_REF_DECREESE macros for that.
+// this is VERY slow.
 // #define BS_DEBUG_REFCOUNT
 
 // bytecode version, should only be changed when binary format changes
@@ -52,6 +53,7 @@
 #define BS_USERDATA_SET(fn) void fn(BromScript::Instance* bsi, void* ptr, BromScript::Variable* var)
 
 #define BS_THROW_ERROR(bsi_or_args, msg) (bsi_or_args)->Error((msg), __LINE__, __FILE__)
+#define BS_ARITHMATICOP_TOFUNCINDEX(op) (int)op - (int)Operators::Arithmetic_START - 1
 
 #ifndef null
 #define null 0

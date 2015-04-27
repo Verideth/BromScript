@@ -46,10 +46,10 @@ namespace BromScript{
 
 				EzSock* sock = (EzSock*)args->GetThisObjectData();
 
-				if (!sock->create()) return Converter::ToVariable(false);
-				if (!sock->connect(args->GetString(0), (unsigned short)args->GetNumber(1))) return Converter::ToVariable(false);
+				if (!sock->create()) return Converter::ToVariable(bsi, false);
+				if (!sock->connect(args->GetString(0), (unsigned short)args->GetNumber(1))) return Converter::ToVariable(bsi, false);
 
-				return Converter::ToVariable(true);
+				return Converter::ToVariable(bsi, true);
 			}
 
 			BS_FUNCTION(Close) {
@@ -67,11 +67,11 @@ namespace BromScript{
 
 				EzSock* sock = (EzSock*)args->GetThisObjectData();
 
-				if (!sock->create()) return Converter::ToVariable(false);
-				if (!sock->bind((unsigned short)args->GetNumber(0))) return Converter::ToVariable(false);
-				if (!sock->listen()) return Converter::ToVariable(false);
+				if (!sock->create()) return Converter::ToVariable(bsi, false);
+				if (!sock->bind((unsigned short)args->GetNumber(0))) return Converter::ToVariable(bsi, false);
+				if (!sock->listen()) return Converter::ToVariable(bsi, false);
 
-				return Converter::ToVariable(true);
+				return Converter::ToVariable(bsi, true);
 			}
 
 			BS_FUNCTION(Send) {
@@ -132,14 +132,14 @@ namespace BromScript{
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_SOCKET_TYPE, true))return null;
 
 				EzSock* sock = (EzSock*)args->GetThisObjectData();
-				return Converter::ToVariable(sock->CanRead());
+				return Converter::ToVariable(bsi, sock->CanRead());
 			}
 
 			BS_FUNCTION(GetIP) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_SOCKET_TYPE, true))return null;
 
 				EzSock* sock = (EzSock*)args->GetThisObjectData();
-				return Converter::ToVariable(inet_ntoa(sock->addr.sin_addr));
+				return Converter::ToVariable(bsi, inet_ntoa(sock->addr.sin_addr));
 			}
 
 			BS_FUNCTION(SetBlocking) {
@@ -155,7 +155,7 @@ namespace BromScript{
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_SOCKET_TYPE, true))return null;
 
 				EzSock* sock = (EzSock*)args->GetThisObjectData();
-				return Converter::ToVariable(sock->addr.sin_port);
+				return Converter::ToVariable(bsi, sock->addr.sin_port);
 			}
 
 			void RegisterUD(BromScript::Instance* bsi) {

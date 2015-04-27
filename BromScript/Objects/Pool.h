@@ -16,21 +16,35 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	*/
 
-#ifndef BROMSCRIPT_LIBARIES_INCLUDED
-#define BROMSCRIPT_LIBARIES_INCLUDED
+#ifndef BROMSCRIPT_POOL_INCLUDED
+#define BROMSCRIPT_POOL_INCLUDED
 
-#include "Libaries/BSLibMath.h"
-#include "Libaries/BSLibGlobal.h"
-#include "Libaries/BSLibString.h"
-#include "Libaries/BSLibDebug.h"
-#include "Libaries/BSLibConsole.h"
+#include "../Objects/Variable.h"
 
-#include "Userdatas/BSUDIterator.h"
-#include "Userdatas/BSUDSocket.h"
-#include "Userdatas/BSUDPacket.h"
-#include "Userdatas/BSUDIO.h"
-#include "Userdatas/BSUDInterop.h"
-#include "Userdatas/BSUDInteropMethod.h"
-#include "Userdatas/BSUDRawData.h"
+#define BS_POOL_SIZE 4098
+
+namespace BromScript{
+	struct PoolLink {
+		Variable* Data;
+		PoolLink* NextLink;
+	};
+
+	class Pool {
+	public:
+		int LowestIndex;
+		int HighestIndex;
+		int Count;
+
+		PoolLink* NextUnusedLink;
+		PoolLink* NextUsedLink;
+
+		Pool(int id);
+		Variable Buffer[BS_POOL_SIZE];
+		PoolLink BufferLinks[BS_POOL_SIZE];
+
+		Variable* GetNext();
+		void Free(Variable* pooledvalue);
+	};
+}
 
 #endif

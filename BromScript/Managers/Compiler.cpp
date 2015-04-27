@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace Scratch;
 
 namespace BromScript {
-	Compiler::Compiler(CString filename, const char* chunk, int chunklen, bool addcurline, List<CompilerLocalData>& locals, CDictionary<CString, CompilerLabelData>& labels, List<CompilerLabelData>& gotos, List<CompilerException>& warnings, Compiler* parent) : Parent(parent), Gotos(gotos), Locals(locals), Warnings(warnings), Labels(labels), CurrentChunk(null), Filename(filename), WriteLineNumbers(addcurline), CurrentLineParent(0), CurrentPos(0), ChunkSize(chunklen) {
+	Compiler::Compiler(CString filename, const char* chunk, int chunklen, bool addcurline, List<CompilerLocalData>& locals, CDictionary<CString, CompilerLabelData>& labels, List<CompilerLabelData>& gotos, List<CompilerException>& warnings, Compiler* parent, List<CString>& looplabels) : Parent(parent), Gotos(gotos), Locals(locals), LoopLabels(looplabels), Warnings(warnings), Labels(labels), CurrentChunk(null), Filename(filename), WriteLineNumbers(addcurline), CurrentLineParent(0), CurrentPos(0), ChunkSize(chunklen) {
 		if (this->ChunkSize == 0)
 			return;
 
@@ -51,7 +51,8 @@ namespace BromScript {
 		List<CompilerLocalData> locals;
 		CDictionary<CString, CompilerLabelData> labels;
 		List<CompilerLabelData> gotos;
-		Compiler c(filename, chunk, chunklen, writecodelines, locals, labels, gotos, warnings, null);
+		List<CString> looplabels;
+		Compiler c(filename, chunk, chunklen, writecodelines, locals, labels, gotos, warnings, null, looplabels);
 		c.CurrentLineParent = 1; // file start at 0 line number, so add one here, it fixes a shitload of headage.
 
 		if (writeheader) {
@@ -71,14 +72,14 @@ namespace BromScript {
 		int scopestart = c.Writer.Count;
 		byte* code = c.Run(&codesize, &strtbl);
 
-		*(int*)(code + localsjumppos) = codesize;
+		*(int*)(code + localsjumppos) = codesize + 1;
 		c.Writer.WriteInt(locals.Count);
 		for (int i = 0; i < locals.Count; i++) {
 			c.Writer.WriteString(locals[i].Name);
 			c.Writer.WriteInt(locals[i].Type);
 		}
 
-		*(int*)(code + stringtbljumppos) = codesize + c.Writer.Count;
+		*(int*)(code + stringtbljumppos) = codesize + c.Writer.Count + 1;
 		c.Writer.WriteShort(strtbl.Count);
 		for (int i = 0; i < strtbl.Count; i++) {
 			CString str(strtbl[i]);
@@ -92,7 +93,7 @@ namespace BromScript {
 
 			if (ld.ScopeStart == -1) {
 				ld.ScopeStart = scopestart;
-				ld.ScopeEnd = scopestart + codesize;
+				ld.ScopeEnd = scopestart + codesize + 1;
 			}
 		}
 
@@ -105,31 +106,21 @@ namespace BromScript {
 			}
 
 			CompilerLabelData ld = labels[gd.Name];
-			if (ld.ScopeDept - gd.ScopeDept > 0) {
-				for (int i = 0; i < strtbl.Count; i++) {
-					delete strtbl[i];
-				}
-				delete[] code;
-
-				c.CurrentStatmentLine = gd.Line;
-				c.ThrowError("Cannot goto inside scopes, only outwards");
-			}
 
 			if (gd.Offset < ld.ScopeStart || gd.Offset > ld.ScopeEnd) {
-				// overwrite scope to 0, just jump and hope the person has a "back" in there :v
-				ld.ScopeDept = gd.ScopeDept;
 				c.CurrentStatmentLine = gd.Line;
 				c.ThrowWarning("Jumping inside of another function, unsafe!");
 			}
 
-			*(short*)(code + gd.Offset) = ld.ScopeDept - gd.ScopeDept;
-			*(int*)(code + gd.Offset + 2) = ld.Offset;
+			*(int*)(code + gd.Offset) = ld.Offset;
 		}
 
-		byte* buff = new byte[codesize + c.Writer.Count];
+		byte* buff = new byte[codesize + c.Writer.Count + 1];
+		buff[codesize] = null;
+
 		memcpy(buff, code, codesize);
-		memcpy(buff + codesize, c.Writer.Buffer, c.Writer.Count);
-		*outbytecodelength = codesize + c.Writer.Count;
+		memcpy(buff + codesize + 1, c.Writer.Buffer, c.Writer.Count);
+		*outbytecodelength = codesize + c.Writer.Count + 1;
 
 		for (int i = 0; i < strtbl.Count; i++) {
 			delete strtbl[i];
@@ -149,11 +140,8 @@ namespace BromScript {
 		this->Writer.StringTable = strtbl;
 
 		if (this->ChunkSize == 0) {
-			byte* buff = new byte[1];
-			buff[0] = 0;
-			*outbytecodelength = 1;
-
-			return buff;
+			*outbytecodelength = 0;
+			return null;
 		}
 
 		int brackets_a = 0;
@@ -314,25 +302,26 @@ namespace BromScript {
 				}
 			} else {
 				if (curline.StartsWith("function") || curline.StartsWith("local function")) this->WriteFunction(curline);
-				else if (curline.StartsWith("class ") || curline.StartsWith("local class ")) this->WriteClass(curline);
-				else if (curline.StartsWith("local ")) this->WriteSetVar(curline);
+				else if (curline.StartsWith("class ") || curline.StartsWith("local class ")) this->WriteClass(curline); //
+				else if (curline.StartsWith("local ")) this->WriteSet(curline);
 				else if (curline.StartsWith("while ") || curline.StartsWith("while(")) this->WriteWhile(curline);
 				else if (curline.StartsWith("for ") || curline.StartsWith("for(")) this->WriteFor(curline);
 				else if (curline.StartsWith("foreach ") || curline.StartsWith("foreach(")) this->WriteForeach(curline);
 				else if (curline.StartsWith("if(") || curline.StartsWith("if (")) this->WriteIf(curline);
-				else if (curline.StartsWith("loop(") || curline.StartsWith("loop (")) this->WriteLoop(curline);
-				else if (curline.StartsWith("goto ")) this->WriteGoto(curline);
-				else if (curline.EndsWith(":")) this->WriteLabel(curline);
-				else if (curline == "continue") this->Writer.WriteByte(Misc::ExecFuncs::Continue);
-				else if (curline == "break") this->Writer.WriteByte(Misc::ExecFuncs::Break);
-				else if (curline == "rewind") this->Writer.WriteByte(Misc::ExecFuncs::Rewind);
+				else if (curline.StartsWith("goto ")) this->WriteJump(curline.Substring(5).Trim());
+				else if (curline.EndsWith(":")) this->WriteLabel(curline.Substring(0, curline.Size() - 1));
+				else if (curline == "continue") this->WriteContinue(curline);
+				else if (curline == "break") this->WriteBreak(curline);
 				else if (curline == "return" || curline.StartsWith("return ")) this->WriteReturn(curline);
 				else if (curline == "delete" || curline.StartsWith("delete ")) this->WriteDelete(curline);
-				else this->WriteMisc(curline);
+				else if (this->FindChar(curline, 0, "=", 1) > -1) this->WriteSet(curline);
+				else {
+					this->WriteArgumentData(curline);
+					this->Writer.WriteOperator(Operators::Pop); // argumentdata always returns something, so off with it's head!
+				}
 			}
 		}
 
-		this->Writer.WriteByte(Misc::ExecFuncs::End);
 		return 0;
 	}
 
@@ -371,6 +360,11 @@ namespace BromScript {
 				}
 			}
 		}
+	}
+
+	int __uniquelabelid = 0;
+	CString Compiler::GetUniqueLabelName() {
+		return CString::Format("__BS_INTERNAL_ULID__%d__", ++__uniquelabelid);
 	}
 
 	CString Compiler::Unescape(CString str) {
@@ -785,9 +779,392 @@ doreturn:
 		return -1;
 	}
 
-	byte* Compiler::GetArgumentData(CString line, int* size) {
-		ByteWriter w;
-		w.StringTable = this->Writer.StringTable;
+	byte* Compiler::GetArgumentData(CString line, int* size) { return null; }
+
+	void Compiler::_WriteArgumentData(List<CString>& args, int& i) {
+		char mathsplitters[] = {'+', '-', '*', '%', '/', '=', '!', '>', '<', '|', '&'};
+
+		CString arg = args[i];
+		if (this->FindCharInSyntaxString(arg, ' ') > -1) {
+			if (!arg.StartsWith("new ") && !arg.StartsWith("enum ") && !arg.StartsWith("function ") && !arg.StartsWith("function(")) {
+				this->ThrowError(CString::Format("Cannot compute '%s'", arg.str_szBuffer));
+			}
+		}
+
+		if (arg == "false") {
+			this->Writer.WriteOperator(Operators::StackBool);
+			this->Writer.WriteBool(false);
+		} else if (arg == "true") {
+			this->Writer.WriteOperator(Operators::StackBool);
+			this->Writer.WriteBool(true);
+		} else if (arg == "null") {
+			this->Writer.WriteOperator(Operators::StackNull);
+		} else if (arg.StartsWith("enum ")) {
+			int argpos = this->FindChar(arg, 0, "{", 1);
+			if (argpos == -1) {
+				this->ThrowError("Invalid enum block");
+			}
+
+			arg = arg.Substring(argpos + 1, -1);
+
+			List<CString> tblargs;
+			this->GetFunctionData(arg.Substring(1, -1), ',', &tblargs);
+
+			this->Writer.WriteOperator(Operators::StackTable);
+
+			CString prevkey;
+			for (int i2 = 0; i2 < tblargs.Count; i2++) {
+				int keypos = this->FindChar(tblargs[i2], 0, "=", 1);
+				if (keypos != -1) {
+					this->WriteArgumentData(tblargs[i2].Substring(keypos + 1).Trim());
+					prevkey = tblargs[i2].Substring(0, keypos).Trim();
+
+					this->Writer.WriteOperator(Operators::AddIndex);
+					this->Writer.WriteBool(true);
+					this->Writer.WriteString(prevkey);
+				} else {
+					if (i2 == 0) {
+						this->WriteArgumentData("0"); // first value of an unasigned enum value should be 0
+					} else {
+						// get previouse value, and add +1 to it
+						this->Writer.WriteOperator(Operators::Duplicate);
+						this->WriteArgumentData(CString::Format("\"%s\"", prevkey.str_szBuffer));
+						this->Writer.WriteOperator(Operators::GetIndex);
+						this->WriteArgumentData("1");
+						this->Writer.WriteOperator(Operators::ArithmeticAdd);
+					}
+					prevkey = tblargs[i2];
+
+					this->Writer.WriteOperator(Operators::AddIndex);
+					this->Writer.WriteBool(true);
+					this->Writer.WriteString(prevkey);
+				}
+			}
+		} else if (arg.StartsWith("function")) {
+			int currentpos = this->CurrentPos;
+			CString* tmp = this->FindStringSpecial(arg, "function", "{", 0);
+			if (tmp == null)
+				this->ThrowError("Invalid function block");
+
+			CString funcline(tmp->Trim());
+			delete tmp;
+
+			int chunkpos = funcline.Size();
+
+			CStackArray<CString> funcargs;
+			int argpos = this->FindChar(funcline, 0, "(", 1);
+			if (argpos > -1) {
+				funcline.Substring(argpos + 1, funcline.Size() - 2 - argpos).Split(",", funcargs);
+
+				for (int i2 = 0; i2 < funcargs.Count(); i2++) {
+					funcargs[i2] = funcargs[i2].Trim();
+
+					if (funcargs[i2].Size() == 0)
+						delete funcargs.PopAt(i2--);
+				}
+			}
+
+			int chunkstart = this->FindChar(arg, 8, "{", 1);
+			CString funcchunk = arg.Substring(chunkstart + 1, -1);
+
+			List<CompilerLocalData> locals;
+
+			for (int i2 = 0; i2 < funcargs.Count(); i2++) {
+				CString curarg = funcargs[i2];
+				int spacepos = curarg.IndexOf(' ');
+				int vartype = -1;
+				if (spacepos > -1) {
+					CString typestr = curarg.Substring(0, spacepos);
+					curarg = curarg.Substring(spacepos + 1);
+
+					if (typestr == "number") vartype = VariableType::Number;
+					else if (typestr == "bool") vartype = VariableType::Bool;
+					else if (typestr == "function") vartype = VariableType::Function;
+					else if (typestr == "string") vartype = VariableType::String;
+					else if (typestr == "table") vartype = VariableType::Table;
+					else vartype = VariableType::Userdata;
+				}
+
+				funcargs[i2] = curarg;
+				locals.Add(CompilerLocalData(curarg, vartype));
+			}
+
+			List<CString> looplabels;
+			Compiler chunkproc("AnonFunction", funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this->Warnings, this, looplabels);
+
+
+			this->Writer.WriteOperator(Operators::StackFunction);
+			this->Writer.WriteString(this->Filename);
+			this->Writer.WriteStrings(funcargs, true);
+
+			this->Writer.WriteInt(locals.Count);
+			for (int i = 0; i < locals.Count; i++) {
+				this->Writer.WriteString(locals[i].Name);
+				this->Writer.WriteInt(locals[i].Type);
+			}
+
+			this->Writer.Count += 4; // to fix label offsets
+			int labelstart = this->Labels.Count();
+			int scopestart = this->Writer.Count;
+
+			byte* bytecode;
+			int codelen = 0;
+			try {
+				bytecode = chunkproc.Run(&codelen, this->CurrentLineParent + this->CurrentStatmentLine, this->Writer.StringTable);
+			} catch (CompilerException e) {
+				e.CurrentFile = CString::Format("%s - %s", this->Filename.str_szBuffer, e.CurrentFile.str_szBuffer);
+				e.CurrentLine += GetCurrentLine(this->CurrentChunk, chunkstart);
+
+				throw e;
+			}
+			codelen++;
+
+			this->Writer.Count -= 4; // to unfix label offsets
+			for (int i = labelstart; i < this->Labels.Count(); i++) {
+				CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
+
+				if (ld.ScopeStart == -1) {
+					ld.ScopeStart = scopestart;
+					ld.ScopeEnd = scopestart + codelen;
+				}
+			}
+
+			this->Writer.WriteInt(codelen);
+			this->Writer.WriteBytes(bytecode, codelen - 1, false);
+			this->Writer.WriteOperator(Operators::EndScope); // write the end scope to be sure the function always returns
+
+			delete[] bytecode;
+		} else if (arg == "new" || arg.StartsWith("new ")) {
+			if (arg == "new") {
+				i++;
+				if (i >= args.Count) {
+					this->ThrowError("Invalid function block");
+				}
+
+				arg = args[i];
+			} else {
+				arg = arg.Substring(4);
+			}
+
+			CString classname = "";
+			CString funcargs = "";
+
+			bool kakquiots = false;
+			int kakietsanders = 0, kakietsanders2 = 0;
+			int arglen = arg.Size();
+			List<CString> setsafter;
+			for (int i2 = 0; i2 < arglen; i2++) {
+				if (arg[i2] == '"' && !(i2 > 0 && arg[i2 - 1] == '\\'))
+					kakquiots = !kakquiots;
+
+				if (!kakquiots && arg[i2] == '(')
+					kakietsanders++;
+
+				if (!kakquiots && arg[i2] == ')')
+					kakietsanders--;
+
+				if (!kakquiots && arg[i2] == '[')
+					kakietsanders2++;
+
+				if (!kakquiots && arg[i2] == ']')
+					kakietsanders2--;
+
+				if (arg[i2] == '(' && !kakquiots && kakietsanders == 1 && kakietsanders2 == 0) {
+					classname = arg.Substring(0, i2);
+
+					if (arg.EndsWith('}')) {
+						int setspos = this->FindChar(arg, i2, "{", 1);
+						funcargs = arg.Substring(i2 + 1, setspos - i2 - 2);
+						this->GetFunctionData(arg.Substring(setspos + 1, -1), ',', &setsafter);
+					} else {
+						funcargs = arg.Substring(i2 + 1);
+						funcargs = funcargs.Substring(0, funcargs.Size() - 1);
+					}
+					break;
+				}
+			}
+
+			if (classname.Size() == 0)
+				classname = arg;
+
+			classname = classname.Trim();
+
+			List<CString> paras;
+			this->GetFunctionData(funcargs, ',', &paras);
+
+			for (int i2 = paras.Count - 1; i2 > -1; i2--) {
+				this->WriteArgumentData(paras[i2]);
+			}
+
+			this->WriteArgumentData(classname);
+			this->Writer.WriteOperator(Operators::New);
+			this->Writer.WriteInt(paras.Count);
+
+			for (int i2 = 0; i2 < setsafter.Count; i2++) {
+				CStackArray<CString> tmparr;
+				setsafter[i2].Split("=", tmparr);
+				if (tmparr.Count() != 2) {
+					this->ThrowError("Expected 'key = value, key2 = value2, etc'");
+				}
+
+				this->WriteArgumentData(tmparr[1].Trim());
+
+				this->Writer.WriteOperator(Operators::AddIndex);
+				this->Writer.WriteBool(true);
+				this->Writer.WriteString(tmparr[0].Trim());
+
+			}
+		} else if (arg.EndsWith("++") || arg.EndsWith("--")) {
+			this->WriteArgumentData(arg.Substring(0, -2));
+			this->Writer.WriteOperator(arg.EndsWith("++") ? Operators::PostIncrement : Operators::PostDecrement);
+		} else if (arg.StartsWith("++") || arg.StartsWith("--")) {
+			this->WriteArgumentData(arg.Substring(2));
+			this->Writer.WriteOperator(arg[0] == '+' ? Operators::PreIncrement : Operators::PreDecrement);
+		} else if (arg == "(") {
+			CString dat = CString();
+			int curopenings = 1;
+			for (int i2 = i + 1; i2 < args.Count; i2++) {
+				if (args[i2] == "(")
+					curopenings++;
+
+				if (args[i2] == ")")
+					curopenings--;
+
+				if (curopenings == 0) {
+					i = i2;
+					break;
+				}
+
+				dat = CString::Format("%s %s", dat.str_szBuffer, args[i2].str_szBuffer).Trim();
+			}
+
+			this->WriteArgumentData(dat);
+		} else if (arg.StartsWith("\"") && arg.EndsWith("\"")) {
+			this->Writer.WriteOperator(Operators::StackString);
+			this->Writer.WriteString(arg.Substring(1, -1));
+		} else if (arg.StartsWith("#")) {
+			this->WriteArgumentData(arg.Substring(1));
+			this->Writer.WriteOperator(Operators::GetCount);
+		} else if (arg.StartsWith("{") && arg.EndsWith("}")) {
+			List<CString> tblargs;
+			this->GetFunctionData(arg.Substring(1, -1), ',', &tblargs);
+
+			this->Writer.WriteOperator(Operators::StackTable);
+
+			for (int i2 = 0; i2 < tblargs.Count; i2++) {
+				int keypos = this->FindChar(tblargs[i2], 0, "=", 1);
+				if (keypos != -1) {
+					this->WriteArgumentData(tblargs[i2].Substring(keypos + 1).Trim());
+
+					this->Writer.WriteOperator(Operators::AddIndex);
+					this->Writer.WriteBool(true);
+					this->Writer.WriteString(tblargs[i2].Substring(0, keypos).Trim());
+				} else {
+					this->WriteArgumentData(tblargs[i2]);
+
+					this->Writer.WriteOperator(Operators::AddIndex);
+					this->Writer.WriteBool(false);
+				}
+			}
+		} else if (CharIsNumber(arg[0]) || ((arg[0] == '-' || arg[0] == '.') && arg.Size() > 1 && CharIsNumber(arg[1]))) {
+			double num = 0;
+			if (arg.StartsWith("0x")) {
+				char* p = null;
+				num = (double)strtoul(arg.str_szBuffer + 2, &p, 16);
+			} else if (arg[0] == '-') {
+				num = atof(arg.Substring(1).str_szBuffer) * -1;
+			} else {
+				num = atof(arg.str_szBuffer);
+			}
+
+			this->Writer.WriteOperator(Operators::StackNumber);
+			this->Writer.WriteDouble(num);
+		} else {
+			List<CString> tbldata;
+			this->GetIndexes(arg, &tbldata);
+
+			if (tbldata.Count > 1) {
+				CString tblname = tbldata[0].Trim();
+				tblname = tblname.Trim();
+
+				CString funcline = tblname;
+
+				int argpos = this->FindChar(tblname, 0, "(", 1);
+				if (argpos > -1) {
+					int argposend = this->FindChar(funcline, 0, ")", 1);
+					if (argposend == -1) this->ThrowError(CString::Format("Expected end of function call ')' at '%s'", funcline.str_szBuffer));
+					if (argposend + 1 < funcline.Size()) this->ThrowError(CString::Format("Cannot compute '%s'", funcline.str_szBuffer));
+
+					List<CString> tmpisfunctbl;
+					this->GetIndexes(funcline.Substring(argpos + 1, argposend - argpos - 1), &tmpisfunctbl);
+
+					funcline = funcline.Substring(argpos + 1, -1);
+					tblname = tblname.Substring(0, argpos);
+
+					this->WriteGet(tblname);
+					this->WriteCall(funcline);
+				} else {
+					this->WriteGet(tblname);
+				}
+
+				for (int i2 = 1; i2 < tbldata.Count; i2++) {
+					CString varname = tbldata[i2];
+					funcline = varname;
+					bool func = false;
+
+					int argpos = this->FindChar(funcline, 0, "(", 1);
+					if (argpos > -1) {
+						int argposend = this->FindChar(funcline, 0, ")", 1);
+						if (argposend == -1) this->ThrowError(CString::Format("Expected end of function call ')' at '%s'", funcline.str_szBuffer));
+						if (argposend + 1 < funcline.Size()) this->ThrowError(CString::Format("Cannot compute '%s'", funcline.str_szBuffer));
+
+						List<CString> tmpisfunctbl;
+						this->GetIndexes(funcline.Substring(argpos + 1, argposend - argpos - 1), &tmpisfunctbl);
+
+						func = true;
+						funcline = funcline.Substring(argpos + 1, -1);
+						varname = varname.Substring(0, argpos);
+
+						// duplicate the tbl stack, so that we can use it as a this object in functions
+						this->Writer.WriteOperator(Operators::Duplicate);
+					}
+
+					varname = varname.Trim();
+					if (varname == "\"\"" || varname.Size() == 0) {
+						if (!func) {
+							this->ThrowError("Missing indexing key");
+						}
+					}
+
+					this->WriteArgumentData(varname);
+					if (varname != "\"\"" && varname.Size() > 0) {
+						this->Writer.WriteOperator(Operators::GetIndex);
+					}
+
+					if (func) {
+						this->WriteCallThis(funcline);
+					}
+				}
+			} else if (!CharArrContains(arg[0], mathsplitters, sizeof(mathsplitters))) {
+				int funcpos = arg.IndexOf('(');
+				if (funcpos > -1 && CharIsLetter(arg[0])) {
+					int argposend = this->FindChar(arg, 0, ")", 1);
+					if (argposend == -1) this->ThrowError(CString::Format("Expected end of function call ')' at '%s'", arg.str_szBuffer));
+					if (argposend + 1 < arg.Size()) this->ThrowError(CString::Format("Cannot compute '%s'", arg.str_szBuffer));
+
+					CString funcname = arg.Substring(0, funcpos);
+					this->WriteGet(funcname);
+					this->WriteCall(arg.Substring(funcpos + 1, -1));
+				} else {
+					this->WriteGet(args[i].Trim());
+				}
+			} else {
+				this->ThrowError(CString::Format("Cannot compute '%s'", arg.str_szBuffer));
+			}
+		}
+	}
+
+	void Compiler::WriteArgumentData(CString line) {
 		List<CString> args;
 
 		char mathsplitters[] = {'+', '-', '*', '%', '/', '=', '!', '>', '<', '|', '&'};
@@ -841,7 +1218,7 @@ doreturn:
 						curpos = i + 2;
 						didop = true;
 						i++; // this is to skip the next loop, this is a 2 len splitter, not a 1 len.
-					} else if (CharArrContains(line[i], splitters, sizeof(splitters)) && !didop) {
+					} else if (CharArrContains(line[i], splitters, sizeof(splitters)) && !didop && (i + 1 == linelen || (line.Substring(i, 2) != "++" && line.Substring(i, 2) != "--")) && (i - 1 == -1 || (line.Substring(i - 1, 2) != "++" && line.Substring(i - 1, 2) != "--"))) {
 						args.Add(line.Substring(curpos, i - curpos));
 						args.Add(line[i]);
 						curpos = i + 1;
@@ -955,476 +1332,84 @@ doreturn:
 			}
 		}
 
-		w.WriteByte(Misc::ExecFuncs::MergeStart);
-		int mergelenpos = w.Count;
-		w.WriteInt(0);
-		for (int i = 0; i < args.Count; i++) {
+		for (int i = 0; i < args.Count;) {
 			CString arg = args[i];
-			if (this->FindCharInSyntaxString(arg, ' ') > -1) {
-				if (arg != "new" && !arg.StartsWith("new ") && !arg.StartsWith("function ")) {
-					this->ThrowError(CString::Format("Cannot compute '%s'", arg.str_szBuffer));
+			this->_WriteArgumentData(args, i);
+			i++;
+
+			while (i < args.Count) {
+				arg = args[i];
+				Operators opcode = Operators::Skip;
+				if (arg == "+") { opcode = Operators::ArithmeticAdd;
+				} else if (arg == "-") { opcode = Operators::ArithmeticSubstract;
+				} else if (arg == "/") { opcode = Operators::ArithmeticDivide;
+				} else if (arg == "*") { opcode = Operators::ArithmeticMultiply;
+				} else if (arg == "%") { opcode = Operators::ArithmeticModulo;
+				} else if (arg == "&&") { opcode = Operators::ArithmeticAnd;
+				} else if (arg == "||") { opcode = Operators::ArithmeticOr;
+				} else if (arg == ">") { opcode = Operators::ArithmeticGreaterThan;
+				} else if (arg == ">=") { opcode = Operators::ArithmeticGreaterOrEqual;
+				} else if (arg == "<") { opcode = Operators::ArithmeticLessThan;
+				} else if (arg == "<=") { opcode = Operators::ArithmeticLessOrEqual;
+				} else if (arg == "==") { opcode = Operators::ArithmeticEqual;
+				} else if (arg == "!=") { opcode = Operators::ArithmeticNotEqual;
+				} else if (arg == "<<") { opcode = Operators::ArithmeticBitwiseLeft;
+				} else if (arg == ">>") { opcode = Operators::ArithmeticBitwiseRight;
+				} else if (arg == "|") { opcode = Operators::ArithmeticBitwiseOr;
+				} else if (arg == "&") { opcode = Operators::ArithmeticBitwiseAnd;
 				}
-			}
 
-			if (args[i] == "false") { w.WriteByte(Misc::ExecFuncs::Bool); w.WriteByte(0); }
-			else if (args[i] == "true") { w.WriteByte(Misc::ExecFuncs::Bool); w.WriteByte(1); }
-			else if (args[i] == "null") { w.WriteByte(Misc::ExecFuncs::Bool); w.WriteByte(2); }
-			else if (args[i].StartsWith("enum")) {
-				int argpos = this->FindChar(args[i], 0, "{", 1);
-				if (argpos == -1)
-					this->ThrowError("Invalid enum block");
-
-				args.Set(i, args[i].Substring(argpos + 1, -1));
-
-				List<CString> tblargs;
-				this->GetFunctionData(args[i], ',', &tblargs);
-
-				w.WriteByte(Misc::ExecFuncs::Enum);
-				w.WriteInt(tblargs.Count);
-				for (int i2 = 0; i2 < tblargs.Count; i2++) {
-					int keypos = this->FindChar(tblargs[i2], 0, "=", 1);
-					if (keypos != -1) {
-						w.WriteString(tblargs[i2].Substring(0, keypos).Trim());
-						w.WriteBool(true);
-
-						int len = 0;
-						byte* argpointer = this->GetArgumentData(tblargs[i2].Substring(keypos + 1).Trim(), &len);
-						w.WriteBytes(argpointer, len, false);
-						delete[] argpointer;
-					} else {
-						w.WriteString(tblargs[i2].Trim());
-						w.WriteBool(false);
+				if (opcode != Operators::Skip) {
+					if (i + 1 == args.Count) {
+						this->ThrowError(CString::Format("Didn't expect a operator at the end of a statement! Statement is: '%s'", line.str_szBuffer));
 					}
-				}
-			} else if (args[i].StartsWith("function")) {
-				CString* tmp = this->FindStringSpecial(line, "function", "{", 0);
-				if (tmp == null)
-					this->ThrowError("Invalid function block");
 
-				CString funcline(tmp->Trim());
-				delete tmp;
+					i++;
+					this->_WriteArgumentData(args, i);
 
-				int chunkpos = funcline.Size();
+					this->Writer.WriteByte((byte)opcode);
 
-				CStackArray<CString> funcargs;
-				int argpos = this->FindChar(funcline, 0, "(", 1);
-				if (argpos > -1) {
-					funcline.Substring(argpos + 1, funcline.Size() - 2 - argpos).Split(",", funcargs);
-
-					for (int i = 0; i < funcargs.Count(); i++) {
-						funcargs[i] = funcargs[i].Trim();
-
-						if (funcargs[i].Size() == 0)
-							delete funcargs.PopAt(i--);
-					}
-				}
-				CString funcchunk = line.Substring(this->FindChar(line, 8, "{", 1) + 1, -1).Trim();
-
-				List<CompilerLocalData> locals;
-				Compiler chunkproc("AnonFunction", funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this->Warnings, this);
-
-
-				w.WriteByte(Misc::ExecFuncs::AnonFunction);
-				w.WriteString(this->Filename);
-				this->Writer.Count += 4; // to fix label offsets
-				int labelstart = this->Labels.Count();
-				int scopestart = this->Writer.Count;
-
-				byte* bytecode;
-				int codelen = 0;
-				try {
-					bytecode = chunkproc.Run(&codelen, this->CurrentLineParent + GetCurrentLine(this->CurrentChunk, this->CurrentPos), this->Writer.StringTable);
-				} catch (CompilerException e) {
-					e.CurrentFile = CString::Format("%s - %s", this->Filename.str_szBuffer, e.CurrentFile.str_szBuffer);
-					e.CurrentLine += GetCurrentLine(this->CurrentChunk, this->CurrentPos);
-
-					throw e;
-				}
-
-				this->Writer.Count -= 4; // to unfix label offsets
-				for (int i = labelstart; i < this->Labels.Count(); i++) {
-					CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
-
-					if (ld.ScopeStart == -1) {
-						ld.ScopeStart = scopestart;
-						ld.ScopeEnd = scopestart + codelen;
-					}
-				}
-
-				w.WriteBytes(bytecode, codelen, true);
-				w.WriteStrings(funcargs, true);
-
-				w.WriteInt(locals.Count);
-				for (int i = 0; i < locals.Count; i++) {
-					w.WriteString(locals[i].Name);
-					w.WriteInt(locals[i].Type);
-				}
-
-				delete[] bytecode;
-			} else if (args[i] == "new" || args[i].StartsWith("new ")) { // CSnew is NOT used in C++, so redirect this to 'new'
-				if (args[i] == "new") {
 					i++;
 				} else {
-					args.Set(i, args[i].Substring(4));
+					break;
 				}
-
-				CString classname = "";
-				CString funcargs = "";
-
-				bool kakquiots = false;
-				int kakietsanders = 0, kakietsanders2 = 0;
-				int arglen = args[i].Size();
-				List<CString> setsafter;
-				for (int i2 = 0; i2 < arglen; i2++) {
-					if (args[i][i2] == '"' && !(i2 > 0 && args[i][i2 - 1] == '\\'))
-						kakquiots = !kakquiots;
-
-					if (!kakquiots && args[i][i2] == '(')
-						kakietsanders++;
-
-					if (!kakquiots && args[i][i2] == ')')
-						kakietsanders--;
-
-					if (!kakquiots && args[i][i2] == '[')
-						kakietsanders2++;
-
-					if (!kakquiots && args[i][i2] == ']')
-						kakietsanders2--;
-
-					if (args[i][i2] == '(' && !kakquiots && kakietsanders == 1 && kakietsanders2 == 0) {
-						classname = args[i].Substring(0, i2);
-
-						if (args[i].EndsWith('}')) {
-							int setspos = this->FindChar(args[i], i2, "{", 1);
-							funcargs = args[i].Substring(i2 + 1, setspos - i2 - 2);
-							this->GetFunctionData(args[i].Substring(setspos + 1, -1), ',', &setsafter);
-						} else {
-							funcargs = args[i].Substring(i2 + 1);
-							funcargs = funcargs.Substring(0, funcargs.Size() - 1);
-						}
-						break;
-					}
-				}
-
-				if (classname.Size() == 0)
-					classname = args[i];
-
-				classname = classname.Trim();
-
-				List<CString> classargs;
-				this->GetFunctionData(funcargs, ',', &classargs);
-
-				int bytecodenamelen;
-				byte* bytecodename = this->GetArgumentData(classname, &bytecodenamelen);
-
-				w.WriteByte(Misc::ExecFuncs::New);
-				w.WriteBytes(bytecodename, bytecodenamelen, false);
-
-				delete[] bytecodename;
-
-				w.WriteInt(classargs.Count);
-				for (int i2 = 0; i2 < classargs.Count; i2++) {
-					int len = 0;
-					byte* argpointer = this->GetArgumentData(classargs[i2], &len);
-					w.WriteBytes(argpointer, len, false);
-					delete[] argpointer;
-				}
-
-				w.WriteInt(setsafter.Count);
-				for (int i2 = 0; i2 < setsafter.Count; i2++) {
-					CStackArray<CString> tmparr;
-					setsafter[i2].Split("=", tmparr);
-
-					w.WriteString(tmparr[0].Trim());
-
-					int len = 0;
-					byte* argpointer = this->GetArgumentData(tmparr[1].Trim(), &len);
-					w.WriteBytes(argpointer, len, false);
-					delete[] argpointer;
-
-				}
-			} else if (args[i] == "(") {
-				CString dat = CString();
-				int curopenings = 1;
-				for (int i2 = i + 1; i2 < args.Count; i2++) {
-					if (args[i2] == "(")
-						curopenings++;
-
-					if (args[i2] == ")")
-						curopenings--;
-
-					if (curopenings == 0) {
-						i = i2;
-						break;
-					}
-
-					dat += CString::Format(" %s", args[i2].str_szBuffer);
-				}
-
-				int len = 0;
-				byte* argpointer = this->GetArgumentData(dat.Substring(1, dat.Size() - 1), &len);
-				w.WriteByte(Misc::ExecFuncs::MergeStart);
-				w.WriteInt(len + 6); // start byte, end byte, and 4 for block size
-				w.WriteBytes(argpointer, len, false);
-				w.WriteByte(Misc::ExecFuncs::MergeEnd);
-				delete[] argpointer;
-				continue;
-			} else if (args[i].StartsWith("\"")) {
-				args.Set(i, args[i].Substring(1));
-
-				if (args[i].EndsWith('"') && !args[i].EndsWith("\\\""))
-					args.Set(i, args[i].Substring(0, args[i].Size() - 1));
-
-				w.WriteByte(Misc::ExecFuncs::String);
-				w.WriteString(args[i]);
-
-				i++;
-			} else if (args[i].StartsWith("#")) {
-				int len = 0;
-				byte* argpointer = this->GetArgumentData(args[i].Substring(1, args[i].Size() - 1), &len);
-				w.WriteByte(Misc::ExecFuncs::GetCount);
-				w.WriteBytes(argpointer, len, false);
-				delete[] argpointer;
-
-				i++;
-			} else if (i + 2 < args.Count && ((args[i + 1] == "+" && args[i + 2] == "+") || (args[i + 1] == "-" && args[i + 2] == "-"))) {
-				w.WriteByte(args[i + 1] == "+" ? Misc::ExecFuncs::PostIncrement : Misc::ExecFuncs::PostDecrement);
-
-				int len = 0;
-				byte* argpointer = this->GetArgumentData(args[i], &len);
-				w.WriteBytes(argpointer, len, false);
-				delete[] argpointer;
-
-				i += 3;
-			} else if (i + 1 < args.Count && ((args[i] == "+" && args[i + 1][0] == '+') || (args[i] == "-" && args[i + 1][0] == '-'))) {
-				w.WriteByte(args[i] == "+" ? Misc::ExecFuncs::PreIncrement : Misc::ExecFuncs::PreDecrement);
-
-				int len = 0;
-				byte* argpointer = this->GetArgumentData(args[i + 1].Substring(1), &len);
-				w.WriteBytes(argpointer, len, false);
-				delete[] argpointer;
-
-				i += 3;
-			} else if (args[i].StartsWith("{")) {
-				args.Set(i, args[i].Substring(1, args[i].Size() - 2));
-
-				List<CString> tblargs;
-				this->GetFunctionData(args[i], ',', &tblargs);
-
-				w.WriteByte(Misc::ExecFuncs::Table);
-				w.WriteInt(tblargs.Count);
-				for (int i2 = 0; i2 < tblargs.Count; i2++) {
-					int keypos = this->FindChar(tblargs[i2], 0, "=", 1);
-					if (keypos != -1) {
-						w.WriteBool(true);
-						w.WriteString(tblargs[i2].Substring(0, keypos).Trim());
-
-						int len = 0;
-						byte* argpointer = this->GetArgumentData(tblargs[i2].Substring(keypos + 1).Trim(), &len);
-						w.WriteBytes(argpointer, len, false);
-						delete[] argpointer;
-					} else {
-						w.WriteBool(false);
-						int len = 0;
-						byte* argpointer = this->GetArgumentData(tblargs[i2], &len);
-						w.WriteBytes(argpointer, len, false);
-						delete[] argpointer;
-					}
-				}
-
-				break;
-			} else if (CharIsNumber(args[i][0]) || ((args[i][0] == '-' || args[i][0] == '.') && args[i].Size() > 1 && CharIsNumber(args[i][1]))) {
-				double num = 0;
-				if (args[i].StartsWith("0x")) {
-					char* p = null;
-					num = strtoul(args[i].str_szBuffer + 2, &p, 16);
-				} else if (args[i][0] == '-') {
-					num = atof(args[i].Substring(1).str_szBuffer) * -1;
-				} else {
-					num = atof(args[i].str_szBuffer);
-				}
-
-				w.WriteByte(Misc::ExecFuncs::Number);
-				w.WriteDouble(num);
-			} else {
-				List<CString> tbldata;
-				this->GetIndexes(args[i], &tbldata);
-
-				if (tbldata.Count > 1) {
-					CString tblname = tbldata[0].Trim();
-					if (tblname.EndsWith(')')) {
-						bool kakquiots = false, kakbrackets = false;
-						int kakietsanders = -1;
-
-						int funclen = tblname.Size();
-						for (int i3 = 0; i3 < funclen; i3++) {
-							if (tblname[i3] == '"' && !(i3 > 0 && tblname[i3 - 1] == '\\'))
-								kakquiots = !kakquiots;
-
-							if (!kakquiots && tblname[i3] == '{')
-								kakbrackets = true;
-
-							if (!kakquiots && tblname[i3] == '}')
-								kakbrackets = false;
-
-							if (!kakquiots && !kakbrackets && tblname[i3] == '(') {
-								kakietsanders++;
-
-								if (kakietsanders == 0) {
-									tbldata.Insert(1, tblname.Substring(i3));
-									tblname = tblname.Substring(0, i3);
-									break;
-								}
-							}
-
-							if (!kakquiots && !kakbrackets && tblname[i3] == ')')
-								kakietsanders--;
-						}
-					}
-
-					tblname = tblname.Trim();
-
-					w.WriteByte(Misc::ExecFuncs::GetTblIndex);
-					int localindex = this->GetLocalIndex(tblname);
-					if (localindex > -1) {
-						w.WriteBool(true);
-						w.WriteInt(localindex);
-					} else {
-						w.WriteBool(false);
-						w.WriteString(tblname);
-					}
-					w.WriteByte(tbldata.Count - 1);
-
-					for (int i2 = 1; i2 < tbldata.Count; i2++) {
-						CString varname = tbldata[i2];
-						CString funcline = varname;
-						bool func = false;
-
-						List<CString> tmpisfunctbl;
-						this->GetIndexes(funcline, &tmpisfunctbl);
-
-						if (tmpisfunctbl.Count == 1 && funcline.EndsWith(')')) {
-							bool kakquiots = false, kakbrackets = false;
-							int kakietsanders = -1;
-
-							int funclen = funcline.Size();
-							for (int i3 = 0; i3 < funclen; i3++) {
-								if (funcline[i3] == '"' && !(i3 > 0 && funcline[i3 - 1] == '\\'))
-									kakquiots = !kakquiots;
-
-								if (!kakquiots && funcline[i3] == '{')
-									kakbrackets = true;
-
-								if (!kakquiots && funcline[i3] == '}')
-									kakbrackets = false;
-
-								if (!kakquiots && !kakbrackets && funcline[i3] == '(') {
-									kakietsanders++;
-
-									if (kakietsanders == 0) {
-										func = true;
-										funcline = funcline.Substring(i3 + 1, -1);
-										varname = varname.Substring(0, i3);
-										break;
-									}
-								}
-
-								if (!kakquiots && !kakbrackets && funcline[i3] == ')')
-									kakietsanders--;
-							}
-						}
-
-						if (varname.Size() == 0)
-							varname = "\"\"";
-
-						varname = varname.Trim();
-
-						int len = 0;
-						byte* argpointer = this->GetArgumentData(varname, &len);
-						w.WriteBytes(argpointer, len, false);
-						delete[] argpointer;
-
-						w.WriteByte(func ? 1 : 0);
-						if (func) {
-							List<CString> paras;
-							this->GetFunctionData(funcline, ',', &paras);
-							w.WriteInt(paras.Count);
-							for (int i3 = 0; i3 < paras.Count; i3++) {
-								int len = 0;
-								byte* argpointer = this->GetArgumentData(paras[i3], &len);
-								w.WriteBytes(argpointer, len, false);
-								delete[] argpointer;
-							}
-						}
-					}
-
-					i++;
-				} else if (!CharArrContains(args[i][0], mathsplitters, sizeof(mathsplitters))) {
-					int funcpos = args[i].IndexOf('(');
-					if (funcpos > -1 && CharIsLetter(args[i][0])) {
-						CString funcname = args[i].Substring(0, funcpos);
-						List<CString> paras;
-						this->GetFunctionData(args[i].Substring(funcname.Size() + 1, args[i].Size() - funcname.Size() - 2), ',', &paras);
-
-						w.WriteByte(Misc::ExecFuncs::ExecuteFunction);
-
-						funcname = funcname.Trim();
-						int localindex = this->GetLocalIndex(funcname);
-						if (localindex > -1) {
-							w.WriteBool(true);
-							w.WriteInt(localindex);
-						} else {
-							w.WriteBool(false);
-							w.WriteString(funcname);
-						}
-						w.WriteInt(paras.Count);
-						for (int i2 = 0; i2 < paras.Count; i2++) {
-							int len = 0;
-							byte* argpointer = this->GetArgumentData(paras[i2], &len);
-							w.WriteBytes(argpointer, len, false);
-							delete[] argpointer;
-						}
-					} else {
-						w.WriteByte(Misc::ExecFuncs::GetVar);
-
-						CString localindexstr = args[i].Trim();
-						int localindex = this->GetLocalIndex(localindexstr);
-						if (localindex > -1) {
-							w.WriteBool(true);
-							w.WriteInt(localindex);
-						} else {
-							w.WriteBool(false);
-							w.WriteString(args[i]);
-						}
-					}
-
-					i++;
-				}
-			}
-
-			if (i < args.Count) {
-				CString c = args[i];
-				bool check = false;
-				if (c == "+") { check = true; w.WriteByte(Misc::ArithmaticFuncs::Add); } else if (c == "-") { check = true; w.WriteByte(Misc::ArithmaticFuncs::Substract); } else if (c == "/") { check = true; w.WriteByte(Misc::ArithmaticFuncs::Divide); } else if (c == "*") { check = true; w.WriteByte(Misc::ArithmaticFuncs::Multiply); } else if (c == "%") { check = true; w.WriteByte(Misc::ArithmaticFuncs::Modulo); } else if (c == "&&") { check = true; w.WriteByte(Misc::ArithmaticFuncs::And); } else if (c == "||") { check = true; w.WriteByte(Misc::ArithmaticFuncs::Or); } else if (c == ">") { check = true; w.WriteByte(Misc::ArithmaticFuncs::GreaterThan); } else if (c == ">=") { check = true; w.WriteByte(Misc::ArithmaticFuncs::GreaterOrEqual); } else if (c == "<") { check = true; w.WriteByte(Misc::ArithmaticFuncs::LessThan); } else if (c == "<=") { check = true; w.WriteByte(Misc::ArithmaticFuncs::LessOrEqual); } else if (c == "==") { check = true; w.WriteByte(Misc::ArithmaticFuncs::Equal); } else if (c == "!=") { check = true; w.WriteByte(Misc::ArithmaticFuncs::NotEqual); } else if (c == "<<") { check = true; w.WriteByte(Misc::ArithmaticFuncs::BitwiseLeft); } else if (c == ">>") { check = true; w.WriteByte(Misc::ArithmaticFuncs::BitwiseRight); } else if (c == "|") { check = true; w.WriteByte(Misc::ArithmaticFuncs::BitwiseOr); } else if (c == "&") { check = true; w.WriteByte(Misc::ArithmaticFuncs::BitwiseAnd); }
-
-				if (check && i == args.Count - 1)
-					this->ThrowError(CString::Format("Didn't expect a operator at the end of a statement! Statement is: '%s'", line.str_szBuffer));
 			}
 		}
+	}
 
-		if (w.Count == 5)
-			this->ThrowError(CString::Format("Invalid argument data: '%s'", line.str_szBuffer));
+	void Compiler::WriteCall(CString line) {
+		List<CString> paras;
+		this->GetFunctionData(line, ',', &paras);
 
-		w.WriteByte(Misc::ExecFuncs::MergeEnd);
+		for (int i2 = paras.Count - 1; i2 > -1; i2--) {
+			this->WriteArgumentData(paras[i2]);
+		}
 
+		this->Writer.WriteOperator(Operators::Call);
+		this->Writer.WriteInt(paras.Count);
+	}
 
-		byte* ret = new byte[w.Count];
-		memcpy(ret, w.Buffer, w.Count);
-		*size = w.Count;
+	void Compiler::WriteCallThis(CString line) {
+		List<CString> paras;
+		this->GetFunctionData(line, ',', &paras);
 
-		memcpy(ret + mergelenpos, &w.Count, 4);
+		for (int i2 = paras.Count - 1; i2 > -1; i2--) {
+			this->WriteArgumentData(paras[i2]);
+		}
 
-		return ret;
+		this->Writer.WriteOperator(Operators::CallThis);
+		this->Writer.WriteInt(paras.Count);
+	}
+
+	void Compiler::WriteGet(CString line) {
+		int localindex = this->GetLocalIndex(line);
+		if (localindex > -1) {
+			this->Writer.WriteOperator(Operators::GetL);
+			this->Writer.WriteInt(localindex);
+		} else {
+			this->Writer.WriteOperator(Operators::Get);
+			this->Writer.WriteString(line);
+		}
 	}
 
 	CString Compiler::FindString(CString text, CString start, CString end, int startpos) {
@@ -1544,6 +1529,14 @@ doreturn:
 				else if (c == ']') squarebrackers--;
 				else if (c == '{') tablebrackets++;
 				else if (c == '}') tablebrackets--;
+
+				// if we search on ) } or ] it also needs to trigger after the ifs above, so let's do another check here.
+				// but now, only if it's been one of the above signs, AND it doesn't come after it, because then it would return one after it.
+				if (i + 1 == line.Size() || line[i + 1] != ')' && line[i + 1] != ']' && line[i + 1] != '}') {
+					if (CharArrContains(c, tofind, tofindlen) && funcbrackets == 0 && squarebrackers == 0 && tablebrackets == 0) {
+						return i;
+					}
+				}
 			}
 
 			if (c == '"' && (i == 0 || line[i - 1] != '\\')) quote = !quote;
@@ -1553,38 +1546,46 @@ doreturn:
 	}
 
 	void Compiler::ThrowError(CString err) {
-		throw CompilerException(err, this->Filename, this->CurrentStatmentLine);
+		int linenum = 1; // +1 as silly human offset
+		Compiler* uplink = this;
+		while (uplink != null) {
+			linenum += uplink->CurrentStatmentLine;
+			uplink = uplink->Parent;
+		}
+
+		throw CompilerException(err, this->Filename, linenum);
 	}
 
 	void Compiler::ThrowWarning(CString err) {
-		this->Warnings.Add(CompilerException(err, this->Filename, this->CurrentStatmentLine));
+		int linenum = 1; // +1 as silly human offset
+		Compiler* uplink = this;
+		while (uplink != null) {
+			linenum += uplink->CurrentStatmentLine;
+			uplink = uplink->Parent;
+		}
+
+		this->Warnings.Add(CompilerException(err, this->Filename, linenum));
 	}
 
 	void Compiler::WriteReturn(CString line) {
-		this->Writer.WriteByte(Misc::ExecFuncs::Return);
+		line = line.Substring(6).Trim();
 
-		int argssize = 0;
-		if (line.Size() > 6) {
-			byte* argspointer = this->GetArgumentData(line.Substring(7, line.Size() - 7), &argssize);
-			this->Writer.WriteBytes(argspointer, argssize, false);
-			delete[] argspointer;
-		} else this->Writer.WriteByte(0);
+		if (line.Size() > 0) {
+			this->WriteArgumentData(line);
+			this->Writer.WriteOperator(Operators::Return);
+			this->Writer.WriteBool(true);
+		} else {
+			this->Writer.WriteOperator(Operators::Return);
+			this->Writer.WriteBool(false);
+		}
 	}
 
 	void Compiler::WriteDelete(CString line) {
-		this->Writer.WriteByte(Misc::ExecFuncs::Delete);
+		CString arg = line.Substring(6).Trim();
+		if (arg.Size() == 0) this->ThrowError("Missing argument after delete keyword");
 
-		if (line.Size() < 7) this->ThrowError("Missing argument after delete keyword");
-		CString arg = line.Substring(7);
-
-		if (arg.Size() == 0) {
-			int argssize = 0;
-			byte* argspointer = this->GetArgumentData(arg, &argssize);
-			this->Writer.WriteBytes(argspointer, argssize, false);
-			delete[] argspointer;
-		} else {
-			this->ThrowError("Missing argument after delete keyword");
-		}
+		this->WriteArgumentData(arg);
+		this->Writer.WriteOperator(Operators::Delete);
 	}
 
 	void Compiler::DoDefines() {
@@ -1615,7 +1616,7 @@ doreturn:
 						i++;
 					}
 				}
-				 
+
 				int dlen = this->Defines.Count();
 				for (int di = 0; di < dlen; di++) {
 					CString key = this->Defines.GetKeyByIndex(di);
@@ -1665,7 +1666,7 @@ doreturn:
 			int bracketpos = this->FindCharInSyntaxString(line, '{');
 
 			if (equalspos > -1 && (bracketpos == -1 || equalspos < bracketpos)) {
-				this->WriteSetVar(line);
+				this->WriteSet(line);
 				return;
 			}
 
@@ -1682,93 +1683,27 @@ doreturn:
 		int chunkpos = this->FindChar(line, 10, "{", 1);
 
 		CString funcname = "";
+		CString argsline = "";
 		CStackArray<CString> funcargs;
 		int argpos = this->FindChar(funcline, 0, "(", 1);
-		if (argpos == -1)
+		if (argpos == -1){
 			funcname = funcline;
-		else {
-			funcname = funcline.Substring(0, argpos);
-			funcline.Substring(argpos + 1, funcline.Size() - 2 - argpos).Split(",", funcargs);
-
-			for (int i = 0; i < funcargs.Count(); i++) {
-				funcargs[i] = funcargs[i].Trim();
-
-				if (funcargs[i].Size() == 0)
-					delete funcargs.PopAt(i--);
-			}
-		}
-		CString funcchunk = line.Substring(chunkpos + 1, -1).Trim();
-
-		List<CString> tblindexes;
-		this->GetIndexes(funcname, &tblindexes);
-		for (int i = 0; i < tblindexes.Count; i++) {
-			tblindexes.Set(i, tblindexes[i].Trim('\"'));
-		}
-
-		if (local) this->Locals.Add(CompilerLocalData(tblindexes[0], VariableType::Function));
-
-		this->Writer.WriteByte(Misc::ExecFuncs::Function);
-		this->Writer.WriteBool(local);
-
-		if (local) {
-			this->Writer.WriteInt(this->Locals.Count - 1);
+			argsline = "";
 		} else {
-			CString localindexstr = tblindexes[0];
-			int localindex = this->GetLocalIndex(localindexstr);
-			if (localindex > -1) {
-				this->Writer.WriteBool(true);
-				this->Writer.WriteInt(localindex);
-			} else {
-				this->Writer.WriteBool(false);
-				this->Writer.WriteString(tblindexes[0]);
-			}
-		}
-		this->Writer.WriteString(this->Filename);
-
-		List<CompilerLocalData> locals;
-
-		for (int i = 0; i < funcargs.Count(); i++) {
-			locals.Add(CompilerLocalData(funcargs[i], -1));
+			argsline = funcline.Substring(argpos + 1, -1);
+			funcname = funcline.Substring(0, argpos);
 		}
 
-		this->Writer.Count += 4; // to fix label offsets
-		int labelstart = this->Labels.Count();
-		int scopestart = this->Writer.Count;
-		Compiler chunkproc(funcname, funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this->Warnings, this);
-
-		byte* bytecode;
-		int codelen = 0;
-		try {
-			bytecode = chunkproc.Run(&codelen, this->CurrentLineParent + this->CurrentStatmentLine, this->Writer.StringTable);
-		} catch (CompilerException e) {
-			e.CurrentFile = CString::Format("%s - %s", this->Filename.str_szBuffer, e.CurrentFile.str_szBuffer);
-
-			throw e;
-		}
-
-		this->Writer.Count -= 4; // to unfix label offsets
-		for (int i = labelstart; i < this->Labels.Count(); i++) {
-			CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
-
-			if (ld.ScopeStart == -1) {
-				ld.ScopeStart = scopestart;
-				ld.ScopeEnd = scopestart + codelen;
-			}
-		}
-
-		this->Writer.WriteBytes(bytecode, codelen, true);
-		this->Writer.WriteStrings(funcargs, true);
-		this->Writer.WriteInt(locals.Count);
-		for (int i = 0; i < locals.Count; i++) {
-			this->Writer.WriteString(locals[i].Name);
-			this->Writer.WriteInt((byte)locals[i].Type);
-		}
-		this->Writer.WriteStrings(tblindexes, true);
-
-		delete[] bytecode;
+		this->WriteSet(CString::Format("%s %s = function(%s) %s", local ? "local function" : "", funcname.str_szBuffer, argsline.str_szBuffer, line.Substring(chunkpos).str_szBuffer));
 	}
 
 	void Compiler::WriteWhile(CString line) {
+		CString labelname_condition = this->GetUniqueLabelName();
+		CString labelname_end = this->GetUniqueLabelName();
+
+		this->LoopLabels.Add(labelname_condition);
+		this->LoopLabels.Add(labelname_end);
+
 		CString args = "";
 
 		int argpos = this->FindChar(line, 0, "(", 1);
@@ -1777,7 +1712,7 @@ doreturn:
 			if (argendpos == -1)
 				this->ThrowError("Error, no ) at while");
 
-			args = line.Substring(argpos + 1, argendpos - argpos - 1);
+			args = line.Substring(argpos + 1, argendpos - argpos - 1).Trim();
 		}
 
 		int chunkpos = this->FindChar(line, 0, "{", 1);
@@ -1795,18 +1730,15 @@ doreturn:
 			codechunk = codechunk.Substring(0, codechunk.Size() - 1);
 		}
 
+		this->WriteLabel(labelname_condition);
 
-		int bytecodeiflen;
-		byte* bytecodeif = this->GetArgumentData(args, &bytecodeiflen);
+		// optimize out the if condition, if it's a infinite loop anyway
+		if (args != "true") {
+			this->WriteArgumentData(args);
+			this->WriteJumpNT(labelname_end);
+		}
 
-		this->Writer.WriteByte(Misc::ExecFuncs::While);
-		this->Writer.WriteBytes(bytecodeif, bytecodeiflen, true);
-
-		this->Writer.Count += 4; // to fix label offsets
-		int labelstart = this->Labels.Count();
-		int scopestart = this->Writer.Count;
-
-		Compiler chunkproc("while", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
+		Compiler chunkproc("while", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this, this->LoopLabels);
 		byte* bytecode;
 		int codelen;
 		try {
@@ -1817,98 +1749,15 @@ doreturn:
 			throw e;
 		}
 
-		this->Writer.Count -= 4; // to unfix label offsets
-		for (int i = labelstart; i < this->Labels.Count(); i++) {
-			CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
-
-			if (ld.ScopeStart == -1) {
-				ld.ScopeStart = scopestart;
-				ld.ScopeEnd = scopestart + codelen;
-			}
-		}
-
-		this->Writer.WriteBytes(bytecode, codelen, true);
-		this->Writer.WriteByte(0);
-
-		delete[] bytecodeif;
+		this->Writer.WriteBytes(bytecode, codelen, false);
 		delete[] bytecode;
-	}
 
-	void Compiler::WriteLoop(CString line) {
-		CString args = "";
+		this->WriteJump(labelname_condition);
+		this->WriteLabel(labelname_end);
 
-		int argpos = this->FindChar(line, 0, "(", 1);
-		if (argpos != 0) {
-			int argendpos = this->FindChar(line, argpos + 1, ")", 1);
-			if (argendpos == -1) {
-				this->ThrowError("Error, no ) at loop");
-			}
-
-			args = line.Substring(argpos + 1, argendpos - argpos - 1);
-		}
-
-		List<CString> fordata;
-		this->GetFunctionData(args, ',', &fordata);
-
-		if (fordata.Count != 2) {
-			this->ThrowError("Invalid syntax for loop(key, loops)");
-		}
-
-		int chunkpos = this->FindChar(line, 0, "{", 1);
-		CString codechunk;
-		if (chunkpos == -1) {
-			this->CurrentStatmentLine = -1;
-			CString* tmp = this->ReadLine();
-			if (tmp == null)
-				this->ThrowError("No chunk at loop");
-
-			codechunk = tmp->Trim();
-			delete tmp;
-		} else {
-			codechunk = line.Substring(chunkpos + 1);
-			codechunk = codechunk.Substring(0, codechunk.Size() - 1);
-		}
-
-		this->Locals.Add(CompilerLocalData(fordata[0], -1));
-
-		this->Writer.WriteByte(Misc::ExecFuncs::Loop);
-		this->Writer.WriteInt(this->Locals.Count - 1);
-
-		int bytecodetbllen;
-		byte* bytecodetbl = this->GetArgumentData(fordata[1], &bytecodetbllen);
-
-		this->Writer.WriteBytes(bytecodetbl, bytecodetbllen, false);
-
-		this->Writer.Count += 4; // to fix label offsets
-		int labelstart = this->Labels.Count();
-		int scopestart = this->Writer.Count;
-
-		Compiler chunkproc("loop", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
-		byte* bytecode;
-		int bytecodelen;
-		try {
-			bytecode = chunkproc.Run(&bytecodelen, this->CurrentStatmentLine + this->CurrentLineParent, this->Writer.StringTable);
-		} catch (CompilerException e) {
-			e.CurrentFile = CString::Format("%s - %s", this->Filename.str_szBuffer, e.CurrentFile.str_szBuffer);
-			throw e;
-		}
-
-		this->Writer.Count -= 4; // to unfix label offsets
-		for (int i = labelstart; i < this->Labels.Count(); i++) {
-			CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
-
-			if (ld.ScopeStart == -1) {
-				ld.ScopeStart = scopestart;
-				ld.ScopeEnd = scopestart + bytecodelen;
-			}
-		}
-
-		this->Writer.WriteInt(bytecodelen + 1);
-		this->Writer.WriteBytes(bytecode, bytecodelen, false);
-		this->Writer.WriteByte(0);
-
-		delete[] bytecodetbl;
-		delete[] bytecode;
+		// clear up the loop labels for break/continue
+		this->LoopLabels.RemoveAt(this->LoopLabels.Count - 1);
+		this->LoopLabels.RemoveAt(this->LoopLabels.Count - 1);
 	}
 
 	void Compiler::WriteForeach(CString line) {
@@ -1927,7 +1776,7 @@ doreturn:
 		this->GetFunctionData(args, ',', &fordata);
 
 		if (fordata.Count != 3) {
-			this->ThrowError("Invalid syntax for loop(key, loops)");
+			this->ThrowError("Invalid syntax for foreach(key, value, tbl)");
 		}
 
 		int chunkpos = this->FindChar(line, 0, "{", 1);
@@ -1944,24 +1793,30 @@ doreturn:
 			codechunk = codechunk.Substring(0, codechunk.Size() - 1);
 		}
 
+		CString keyname = fordata[0];
+		CString valuename = fordata[1];
 
-		this->Locals.Add(CompilerLocalData(fordata[0], -1));
-		this->Locals.Add(CompilerLocalData(fordata[1], -1));
+		CString labelname_end = this->GetUniqueLabelName();
+		CString labelname_condition = this->GetUniqueLabelName();
+		CString labelname_iteratorvarname = this->GetUniqueLabelName();
 
-		this->Writer.WriteByte(Misc::ExecFuncs::ForEach);
-		this->Writer.WriteInt(this->Locals.Count - 2);
-		this->Writer.WriteInt(this->Locals.Count - 1);
+		this->LoopLabels.Add(labelname_condition);
+		this->LoopLabels.Add(labelname_end);
 
-		int bytecodetbllen;
-		byte* bytecodetbl = this->GetArgumentData(fordata[2], &bytecodetbllen);
+		this->WriteSet(CString::Format("local %s = null", keyname.str_szBuffer));
+		this->WriteSet(CString::Format("local %s = null", valuename.str_szBuffer));
+		this->WriteSet(CString::Format("local Iterator %s = new Iterator(%s)", labelname_iteratorvarname.str_szBuffer, fordata[2].str_szBuffer));
 
-		this->Writer.WriteBytes(bytecodetbl, bytecodetbllen, false);
 
-		this->Writer.Count += 4; // to fix label offsets
-		int labelstart = this->Labels.Count();
-		int scopestart = this->Writer.Count;
+		this->WriteLabel(labelname_condition);
+		this->WriteSet(CString::Format("%s = %s.NextKey()", keyname.str_szBuffer, labelname_iteratorvarname.str_szBuffer));
 
-		Compiler chunkproc("foreach", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
+		this->WriteArgumentData(keyname);
+		this->WriteJumpNT(labelname_end);
+
+		this->WriteSet(CString::Format("%s = %s[%s]", valuename.str_szBuffer, labelname_iteratorvarname.str_szBuffer, keyname.str_szBuffer));
+
+		Compiler chunkproc("foreach", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this, this->LoopLabels);
 		byte* bytecode;
 		int bytecodelen;
 		try {
@@ -1971,25 +1826,27 @@ doreturn:
 			throw e;
 		}
 
-		this->Writer.Count -= 4; // to unfix label offsets
-		for (int i = labelstart; i < this->Labels.Count(); i++) {
-			CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
-
-			if (ld.ScopeStart == -1) {
-				ld.ScopeStart = scopestart;
-				ld.ScopeEnd = scopestart + bytecodelen;
-			}
-		}
-
-		this->Writer.WriteInt(bytecodelen + 1);
 		this->Writer.WriteBytes(bytecode, bytecodelen, false);
-		this->Writer.WriteByte(0);
 
-		delete[] bytecodetbl;
+		this->WriteJump(labelname_condition);
+		this->WriteLabel(labelname_end);
+
 		delete[] bytecode;
+
+		// clear up the loop labels for break/continue
+		this->LoopLabels.RemoveAt(this->LoopLabels.Count - 1);
+		this->LoopLabels.RemoveAt(this->LoopLabels.Count - 1);
 	}
 
 	void Compiler::WriteFor(CString line) {
+		CString labelname_condition = this->GetUniqueLabelName();
+		CString labelname_after = this->GetUniqueLabelName();
+		CString labelname_end = this->GetUniqueLabelName();
+
+		this->LoopLabels.Add(labelname_after);
+		this->LoopLabels.Add(labelname_end);
+
+		// find condition data
 		CString args = "";
 
 		int argpos = this->FindChar(line, 0, "(", 1);
@@ -2006,6 +1863,7 @@ doreturn:
 		if (fordata.Count != 3)
 			this->ThrowError("Error, invalid (init, check, after) statment at for loop");
 
+		// find chunk
 		int chunkpos = this->FindChar(line, 0, "{", 1);
 		CString codechunk;
 		if (chunkpos == -1) {
@@ -2020,7 +1878,8 @@ doreturn:
 			codechunk = codechunk.Substring(0, codechunk.Size() - 1);
 		}
 
-		Compiler initproc("for (>><<, {}, {})", fordata[0].str_szBuffer, fordata[0].Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
+		// write init chunk
+		Compiler initproc("for (>><<, {}, {})", fordata[0].str_szBuffer, fordata[0].Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this, this->LoopLabels);
 		byte* bytecodeinit;
 		int bytecodeinitlen;
 		try {
@@ -2031,7 +1890,14 @@ doreturn:
 			throw e;
 		}
 
-		Compiler endproc("for ({} {}, >><<)", fordata[2].str_szBuffer, fordata[2].Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
+		this->Writer.WriteBytes(bytecodeinit, bytecodeinitlen, false);
+
+		// write jump that skips the loop end chunk for the first run
+		this->WriteJump(labelname_condition);
+		this->WriteLabel(labelname_after);
+
+		// write endchunk data
+		Compiler endproc("for ({} {}, >><<)", fordata[2].str_szBuffer, fordata[2].Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this, this->LoopLabels);
 		byte* bytecodeend;
 		int bytecodeendlen;
 		try {
@@ -2042,18 +1908,15 @@ doreturn:
 			throw e;
 		}
 
-		int bytecodelooplen;
-		byte* bytecodeloop = this->GetArgumentData(fordata[1], &bytecodelooplen);
+		this->Writer.WriteBytes(bytecodeend, bytecodeendlen, false);
 
-		this->Writer.WriteByte(Misc::ExecFuncs::For);
-		this->Writer.WriteInt(bytecodeinitlen);
-		this->Writer.WriteInt(bytecodelooplen);
+		// write the condition
+		this->WriteLabel(labelname_condition);
+		this->WriteArgumentData(fordata[1]);
 
-		this->Writer.Count += bytecodeinitlen + bytecodelooplen + 8; // to fix label offsets
-		int labelstart = this->Labels.Count();
-		int scopestart = this->Writer.Count;
+		this->WriteJumpNT(labelname_end);
 
-		Compiler chunkproc("for", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
+		Compiler chunkproc("for", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this, this->LoopLabels);
 		byte* bytecode;
 		int bytecodelen;
 		try {
@@ -2064,198 +1927,18 @@ doreturn:
 			throw e;
 		}
 
-		this->Writer.Count -= bytecodeinitlen + bytecodelooplen + 8;; // to unfix label offsets
-		for (int i = labelstart; i < this->Labels.Count(); i++) {
-			CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
-
-			if (ld.ScopeStart == -1) {
-				ld.ScopeStart = scopestart;
-				ld.ScopeEnd = scopestart + bytecodelen;
-			}
-		}
-
-		this->Writer.WriteInt(bytecodelen);
-		this->Writer.WriteInt(bytecodeendlen);
-
-		this->Writer.WriteBytes(bytecodeinit, bytecodeinitlen, false);
-		this->Writer.WriteBytes(bytecodeloop, bytecodelooplen, false);
 		this->Writer.WriteBytes(bytecode, bytecodelen, false);
-		this->Writer.WriteBytes(bytecodeend, bytecodeendlen, false);
+
+		this->WriteJump(labelname_after);
+		this->WriteLabel(labelname_end);
 
 		delete[] bytecodeinit;
-		delete[] bytecodeloop;
 		delete[] bytecode;
 		delete[] bytecodeend;
-	}
 
-	void Compiler::WriteMisc(CString line) {
-		int setvarpos = this->FindChar(line, 0, "=", 1);
-
-		if (setvarpos > -1) {
-			this->WriteSetVar(line);
-		} else if (line.EndsWith(')')) {
-			List<CString> tbldata;
-			this->GetIndexes(line, &tbldata);
-
-			if (tbldata.Count > 1) {
-				CString tblname = tbldata[0].Trim();
-				if (tblname.EndsWith(')')) {
-					bool kakquiots = false, kakbrackets = false;
-					int kakietsanders = -1;
-
-					int funclen = tblname.Size();
-					for (int i3 = 0; i3 < funclen; i3++) {
-						if (tblname[i3] == '"' && !(i3 > 0 && tblname[i3 - 1] == '\\'))
-							kakquiots = !kakquiots;
-
-						if (!kakquiots && tblname[i3] == '{')
-							kakbrackets = true;
-
-						if (!kakquiots && tblname[i3] == '}')
-							kakbrackets = false;
-
-						if (!kakquiots && !kakbrackets && tblname[i3] == '(') {
-							kakietsanders++;
-
-							if (kakietsanders == 0) {
-								tbldata.Insert(1, tblname.Substring(i3));
-								tblname = tblname.Substring(0, i3);
-								break;
-							}
-						}
-
-						if (!kakquiots && !kakbrackets && tblname[i3] == ')')
-							kakietsanders--;
-					}
-				}
-
-				this->Writer.WriteByte(Misc::ExecFuncs::GetTblIndex);
-				int localindex = this->GetLocalIndex(tblname);
-				if (localindex > -1) {
-					this->Writer.WriteBool(true);
-					this->Writer.WriteInt(localindex);
-				} else {
-					this->Writer.WriteBool(false);
-					this->Writer.WriteString(tblname);
-				}
-				this->Writer.WriteByte((tbldata.Count - 1));
-
-				for (int i2 = 1; i2 < tbldata.Count; i2++) {
-					CString varname = tbldata[i2].Trim();
-					CString funcline = varname;
-					bool func = false;
-
-					List<CString> tmpisfunctbl;
-					this->GetIndexes(funcline, &tmpisfunctbl);
-
-					if (tmpisfunctbl.Count == 1 && funcline.EndsWith(')')) {
-						bool kakquiots = false, kakbrackets = false;
-						int kakietsanders = -1;
-
-						int funclen = funcline.Size();
-						for (int i3 = 0; i3 < funclen; i3++) {
-							if (funcline[i3] == '"' && !(i3 > 0 && funcline[i3 - 1] == '\\'))
-								kakquiots = !kakquiots;
-
-							if (!kakquiots && funcline[i3] == '{')
-								kakbrackets = true;
-
-							if (!kakquiots && funcline[i3] == '}')
-								kakbrackets = false;
-
-							if (!kakquiots && !kakbrackets && funcline[i3] == '(') {
-								kakietsanders++;
-
-								if (kakietsanders == 0) {
-									func = true;
-									funcline = funcline.Substring(i3 + 1, -1);
-									varname = varname.Substring(0, i3).Trim();
-									break;
-								}
-							}
-
-							if (!kakquiots && !kakbrackets && funcline[i3] == ')')
-								kakietsanders--;
-						}
-					}
-
-					if (varname.Size() == 0)
-						varname = "\"\"";
-
-					int len = 0;
-					byte* argpointer = this->GetArgumentData(varname, &len);
-					this->Writer.WriteBytes(argpointer, len, false);
-					delete[] argpointer;
-
-					this->Writer.WriteByte(func ? 1 : 0);
-					if (func) {
-						List<CString> paras;
-						this->GetFunctionData(funcline, ',', &paras);
-						this->Writer.WriteInt(paras.Count);
-						for (int i3 = 0; i3 < paras.Count; i3++) {
-							int len = 0;
-							byte* argpointer = this->GetArgumentData(paras[i3], &len);
-							this->Writer.WriteBytes(argpointer, len, false);
-							delete[] argpointer;
-						}
-					}
-				}
-			} else {
-				CString funcname = line.Substring(0, line.IndexOf('('));
-				CString funcline = line.Substring(funcname.Size() + 1, line.Size() - funcname.Size() - 2);
-
-				funcname = funcname.Trim();
-
-				List<CString> paras;
-				this->GetFunctionData(funcline, ',', &paras);
-
-				this->Writer.WriteByte(Misc::ExecFuncs::ExecuteFunction);
-				int localindex = this->GetLocalIndex(funcname);
-				if (localindex > -1) {
-					this->Writer.WriteBool(true);
-					this->Writer.WriteInt(localindex);
-				} else {
-					this->Writer.WriteBool(false);
-					this->Writer.WriteString(funcname);
-				}
-				this->Writer.WriteInt(paras.Count);
-				for (int i2 = 0; i2 < paras.Count; i2++) {
-					int len = 0;
-					byte* argspointer = this->GetArgumentData(paras[i2], &len);
-					this->Writer.WriteBytes(argspointer, len, false);
-					delete[] argspointer;
-				}
-			}
-		} else if (line.EndsWith("++")) {
-			this->Writer.WriteByte(Misc::ExecFuncs::PostIncrement);
-			int len = 0;
-			byte* argspointer = this->GetArgumentData(line.Substring(0, -2), &len);
-			this->Writer.WriteBytes(argspointer, len, false);
-			delete[] argspointer;
-		} else if (line.EndsWith("--")) {
-			this->Writer.WriteByte(Misc::ExecFuncs::PostDecrement);
-			int len = 0;
-			byte* argspointer = this->GetArgumentData(line.Substring(0, -2), &len);
-			this->Writer.WriteBytes(argspointer, len, false);
-			delete[] argspointer;
-		} else if (line.StartsWith("++")) {
-			this->Writer.WriteByte(Misc::ExecFuncs::PreIncrement);
-			int len = 0;
-			byte* argspointer = this->GetArgumentData(line.Substring(2), &len);
-			this->Writer.WriteBytes(argspointer, len, false);
-			delete[] argspointer;
-		} else if (line.StartsWith("--")) {
-			this->Writer.WriteByte(Misc::ExecFuncs::PreDecrement);
-			int len = 0;
-			byte* argspointer = this->GetArgumentData(line.Substring(2), &len);
-			this->Writer.WriteBytes(argspointer, len, false);
-			delete[] argspointer;
-		} else {
-			int len = 0;
-			byte* argspointer = this->GetArgumentData(line, &len);
-			this->Writer.WriteBytes(argspointer, len, false);
-			delete[] argspointer;
-		}
+		// clear up the loop labels for break/continue
+		this->LoopLabels.RemoveAt(this->LoopLabels.Count - 1);
+		this->LoopLabels.RemoveAt(this->LoopLabels.Count - 1);
 	}
 
 	int Compiler::GetLocalIndex(CString& key) {
@@ -2268,7 +1951,7 @@ doreturn:
 		return -1;
 	}
 
-	void Compiler::WriteSetVar(CString line) {
+	void Compiler::WriteSet(CString line) {
 		bool local = line.StartsWith("local ");
 		int vartype = -1;
 		if (local) {
@@ -2301,9 +1984,11 @@ doreturn:
 				else if (typestr == "table") vartype = VariableType::Table;
 				else vartype = VariableType::Userdata;
 			}
+
+			this->Locals.Add(CompilerLocalData(name, vartype));
 		}
 
-		byte* argpointer;
+		this->WriteArgumentData(restdata);
 
 		List<CString> tbldata;
 		this->GetIndexes(name, &tbldata);
@@ -2313,189 +1998,94 @@ doreturn:
 				this->ThrowError("You can't localize a table index");
 			}
 
-			List<CString> tblindexes;
-			this->GetIndexes(name, &tblindexes);
+			CString tblname = tbldata[0].Trim();
+			this->WriteGet(tblname);
 
-			this->Writer.WriteByte(Misc::ExecFuncs::SetTblIndex);
-			CString localindexstr = tblindexes[0];
-			int localindex = this->GetLocalIndex(localindexstr);
-			if (localindex > -1) {
-				this->Writer.WriteBool(true);
-				this->Writer.WriteInt(localindex);
-			} else {
-				this->Writer.WriteBool(false);
-				this->Writer.WriteString(tblindexes[0]);
-			}
-
-			this->Writer.WriteByte(tblindexes.Count - 1);
-			for (int i2 = 1; i2 < tblindexes.Count; i2++) {
+			for (int i2 = 1; i2 < tbldata.Count; i2++) {
 				CString varname = tbldata[i2];
 				CString funcline = varname;
 				bool func = false;
 
-				List<CString> tmpisfunctbl;
-				this->GetIndexes(funcline, &tmpisfunctbl);
+				int argpos = this->FindChar(funcline, 0, "(", 1);
+				if (argpos > -1) {
+					int argposend = this->FindChar(funcline, 0, ")", 1);
+					if (argposend == -1) this->ThrowError(CString::Format("Expected end of function call ')' at '%s'", funcline.str_szBuffer));
+					if (argposend + 1 < funcline.Size()) this->ThrowError(CString::Format("Cannot compute '%s'", funcline.str_szBuffer));
 
-				if (tmpisfunctbl.Count == 1 && funcline.EndsWith(')')) {
-					bool kakquiots = false, kakbrackets = false;
-					int kakietsanders = -1;
+					List<CString> tmpisfunctbl;
+					this->GetIndexes(funcline.Substring(argpos + 1, argposend - argpos - 1), &tmpisfunctbl);
 
-					int funclen = funcline.Size();
-					for (int i3 = 0; i3 < funclen; i3++) {
-						if (funcline[i3] == '"' && !(i3 > 0 && funcline[i3 - 1] == '\\'))
-							kakquiots = !kakquiots;
+					func = true;
+					funcline = funcline.Substring(argpos + 1, -1);
+					varname = varname.Substring(0, argpos);
 
-						if (!kakquiots && funcline[i3] == '{')
-							kakbrackets = true;
+					// duplicate the tbl stack, so that we can use it as a this object in functions
+					this->Writer.WriteOperator(Operators::Duplicate);
+				}
 
-						if (!kakquiots && funcline[i3] == '}')
-							kakbrackets = false;
-
-						if (!kakquiots && !kakbrackets && funcline[i3] == '(') {
-							kakietsanders++;
-
-							if (kakietsanders == 0) {
-								func = true;
-
-								funcline = funcline.Substring(i3 + 1, -1);
-								varname = varname.Substring(0, i3);
-								break;
-							}
-						}
-
-						if (!kakquiots && !kakbrackets && funcline[i3] == ')')
-							kakietsanders--;
+				varname = varname.Trim();
+				if (varname == "\"\"" || varname.Size() == 0) {
+					if (!func) {
+						this->ThrowError("Missing indexing key");
 					}
 				}
 
-				if (varname.Size() == 0)
-					varname = "\"\"";
+				this->WriteArgumentData(varname);
+				if (i2 + 1 == tbldata.Count) {
+					this->Writer.WriteOperator(Operators::SetIndex);
+				} else {
+					if (varname != "\"\"" && varname.Size() > 0) {
+						this->Writer.WriteOperator(Operators::GetIndex);
+					}
 
-				int len = 0;
-				byte* argpointer = this->GetArgumentData(varname, &len);
-				this->Writer.WriteBytes(argpointer, len, false);
-				delete[] argpointer;
-
-				this->Writer.WriteByte(func ? 1 : 0);
-				if (func) {
-					List<CString> paras;
-					this->GetFunctionData(funcline, ',', &paras);
-					this->Writer.WriteInt(paras.Count);
-					for (int i3 = 0; i3 < paras.Count; i3++) {
-						int len = 0;
-						byte* argpointer = this->GetArgumentData(paras[i3], &len);
-						this->Writer.WriteBytes(argpointer, len, false);
-						delete[] argpointer;
+					if (func) {
+						this->WriteCallThis(funcline);
 					}
 				}
 			}
 		} else {
 			if (local) {
-				this->Locals.Add(CompilerLocalData(name, vartype));
-
-				this->Writer.WriteByte(Misc::ExecFuncs::LSetVar);
+				this->Writer.WriteOperator(Operators::SetL);
 				this->Writer.WriteInt(this->Locals.Count - 1);
 			} else {
-				this->Writer.WriteByte(Misc::ExecFuncs::SetVar);
-
 				int localindex = this->GetLocalIndex(name);
 				if (localindex > -1) {
-					this->Writer.WriteBool(true);
+					this->Writer.WriteOperator(Operators::SetL);
 					this->Writer.WriteInt(localindex);
 				} else {
-					this->Writer.WriteBool(false);
+					this->Writer.WriteOperator(Operators::Set);
 					this->Writer.WriteString(name);
 				}
 			}
 		}
-
-		int len = 0;
-		argpointer = this->GetArgumentData(restdata, &len);
-		this->Writer.WriteBytes(argpointer, len, false);
-		delete[] argpointer;
 	}
 
 	void Compiler::WriteIf(CString line) {
-		int argstartpos = this->FindChar(line, 0, "(", 1);
-		if (argstartpos == -1)
-			this->ThrowError("Error, no ( at if");
+		CString labelname_end = this->GetUniqueLabelName();
+		CString labelname_nextblock = labelname_end;
 
-		int argpos = this->FindChar(line, argstartpos + 1, ")", 1);
-		if (argpos == -1)
-			this->ThrowError("Error, no ) at if");
+		byte curif = 1;
+		while (curif != 0) {
+			int argstartpos = 0;
+			int argpos = 0;
+			int chunkpos = 0;
 
-		int chunkpos = this->FindChar(line, argpos + 1, "{", 1);
-		// function<space> = 9, + 1 for { and - 1 for }
+			if (curif != 2) {
+				argstartpos = this->FindChar(line, 0, "(", 1);
+				if (argstartpos == -1)
+					this->ThrowError("Error, no ( at if/elseif");
 
-		CString* tmp;
-		CString codechunk;
-		if (chunkpos == -1) {
-			tmp = this->ReadLine();
-			if (tmp == null)
-				this->ThrowError("Could not find code chunk");
+				argpos = this->FindChar(line, argstartpos, ")", 1);
+				if (argpos == -1)
+					this->ThrowError("Error, no ) at if/elseif");
 
-			codechunk = CString(tmp);
-			delete tmp;
-		} else {
-			codechunk = line.Substring(chunkpos + 1);
-			codechunk = codechunk.Substring(0, codechunk.Size() - 1);
-		}
-
-		CString* nextline = this->Peekline();
-		byte nextif = 0;
-
-		if (nextline != null) {
-			if (nextline->StartsWith("elseif (") || nextline->StartsWith("elseif(") || (nextline->StartsWith("elseif") && nextline->Size() == 6))
-				nextif = 1;
-			else if (nextline->StartsWith("else{") || nextline->StartsWith("else {") || (nextline->StartsWith("else") && nextline->Size() == 4))
-				nextif = 2;
-
-			delete nextline;
-		}
-
-		int arglen;
-		byte* argdata = this->GetArgumentData(line.Substring(argstartpos + 1, argpos - argstartpos - 1), &arglen);
-
-		this->Writer.WriteByte(Misc::ExecFuncs::If);
-		this->Writer.WriteByte(nextif);
-		this->Writer.WriteBytes(argdata, arglen, true);
-
-		this->Writer.Count += 4; // to fix label offsets
-		int labelstart = this->Labels.Count();
-		int scopestart = this->Writer.Count;
-
-		Compiler chunkproc("if statement", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
-		byte* bytecode;
-		int bytecodelen;
-		try {
-			bytecode = chunkproc.Run(&bytecodelen, this->CurrentStatmentLine + this->CurrentLineParent, this->Writer.StringTable);
-		} catch (CompilerException e) {
-			e.CurrentFile = CString::Format("%s - %s", this->Filename.str_szBuffer, e.CurrentFile.str_szBuffer);
-
-			throw e;
-		}
-
-		this->Writer.Count -= 4; // to unfix label offsets
-		for (int i = labelstart; i < this->Labels.Count(); i++) {
-			CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
-
-			if (ld.ScopeStart == -1) {
-				ld.ScopeStart = scopestart;
-				ld.ScopeEnd = scopestart + bytecodelen;
+				chunkpos = this->FindChar(line, argpos + 1, "{", 1);
+			} else {
+				chunkpos = this->FindChar(line, 0, "{", 1);
 			}
-		}
-		this->Writer.WriteBytes(bytecode, bytecodelen, true);
 
-		delete[] argdata;
-		delete[] bytecode;
-
-		while (nextif != 0) {
-			CString* tmp = this->ReadLine();
-
-			line = CString(tmp);
-			delete tmp;
-
-			int chunkpos = this->FindChar(line, 0, "{", 1);
+			CString* tmp;
+			CString codechunk;
 			if (chunkpos == -1) {
 				tmp = this->ReadLine();
 				if (tmp == null)
@@ -2508,92 +2098,59 @@ doreturn:
 				codechunk = codechunk.Substring(0, codechunk.Size() - 1);
 			}
 
-			nextif = 0;
-			nextline = this->Peekline();
-
-			if (nextline != null) {
-				if (nextline->StartsWith("elseif (") || nextline->StartsWith("elseif(") || (nextline->StartsWith("elseif") && nextline->Size() == 6))
+			byte nextif = 0;
+			CString* nextlineptr = this->Peekline();
+			CString nextline;
+			if (nextlineptr != null) {
+				nextline = CString(nextlineptr);
+				if (nextline.StartsWith("elseif (") || nextline.StartsWith("elseif(") || nextline.StartsWith("else if") || nextline == "elseif") {
 					nextif = 1;
-				else if (nextline->StartsWith("else{") || nextline->StartsWith("else {") || (nextline->StartsWith("else") && nextline->Size() == 4))
+				} else if (nextline.StartsWith("else{") || nextline.StartsWith("else {") || (nextline.StartsWith("else") && nextline.Size() == 4)) {
 					nextif = 2;
+				}
 
-				delete nextline;
+				delete nextlineptr;
 			}
 
-			if (line.StartsWith("elseif (") || line.StartsWith("elseif(") || line == "elseif") {
-				int argstartpos = this->FindChar(line, 0, "(", 1);
-				if (argstartpos == -1)
-					this->ThrowError("Error, no ( at if");
-
-				int argpos = this->FindChar(line, argstartpos + 1, ")", 1);
-				if (argpos == -1)
-					this->ThrowError("Error, no ) at if");
-
-
-				argdata = this->GetArgumentData(line.Substring(argstartpos + 1, argpos - argstartpos - 1), &arglen);
-
-				this->Writer.WriteByte(Misc::ExecFuncs::ElseIf);
-				this->Writer.WriteByte(nextif);
-				this->Writer.WriteBytes(argdata, arglen, true);
-
-				this->Writer.Count += 4; // to fix label offsets
-				int labelstart = this->Labels.Count();
-				int scopestart = this->Writer.Count;
-
-				Compiler elseifproc("elseif statement", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
-				try {
-					bytecode = elseifproc.Run(&bytecodelen, this->CurrentStatmentLine + this->CurrentLineParent, this->Writer.StringTable);
-				} catch (CompilerException e) {
-					e.CurrentFile = CString::Format("%s - %s", this->Filename.str_szBuffer, e.CurrentFile.str_szBuffer);
-					e.CurrentLine += this->CurrentStatmentLine;
-
-					throw e;
-				}
-
-				this->Writer.Count -= 4; // to unfix label offsets
-				for (int i = labelstart; i < this->Labels.Count(); i++) {
-					CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
-
-					if (ld.ScopeStart == -1) {
-						ld.ScopeStart = scopestart;
-						ld.ScopeEnd = scopestart + bytecodelen;
-					}
-				}
-				this->Writer.WriteBytes(bytecode, bytecodelen, true);
-
-				delete[] argdata;
-				delete[] bytecode;
-			} else if (line.StartsWith("else{") || line.StartsWith("else {") || line == "else") {
-
-				this->Writer.WriteByte(Misc::ExecFuncs::Else);
-				this->Writer.Count += 4; // to fix label offsets
-				int labelstart = this->Labels.Count();
-				int scopestart = this->Writer.Count;
-
-				Compiler elseproc("else statement", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
-				try {
-					bytecode = elseproc.Run(&bytecodelen, this->CurrentStatmentLine + this->CurrentLineParent, this->Writer.StringTable);
-				} catch (CompilerException e) {
-					e.CurrentFile = CString::Format("%s - %s", this->Filename.str_szBuffer, e.CurrentFile.str_szBuffer);
-					e.CurrentLine += this->CurrentStatmentLine + this->CurrentLineParent;
-
-					throw e;
-				}
-
-				this->Writer.Count -= 4; // to unfix label offsets
-				for (int i = labelstart; i < this->Labels.Count(); i++) {
-					CompilerLabelData& ld = this->Labels.GetValueByIndex(i);
-
-					if (ld.ScopeStart == -1) {
-						ld.ScopeStart = scopestart;
-						ld.ScopeEnd = scopestart + bytecodelen;
-					}
-				}
-				this->Writer.WriteBytes(bytecode, bytecodelen, true);
-
-				delete[] bytecode;
+			if (curif != 2) {
+				this->WriteArgumentData(line.Substring(argstartpos + 1, argpos - argstartpos - 1));
+				this->WriteJumpNT(labelname_nextblock);
 			}
+
+
+			Compiler blockproc("codeblock", codechunk.str_szBuffer, codechunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this, this->LoopLabels);
+
+			byte* bytecode;
+			int bytecodelen;
+			try {
+				bytecode = blockproc.Run(&bytecodelen, this->CurrentStatmentLine + this->CurrentLineParent, this->Writer.StringTable);
+			} catch (CompilerException e) {
+				e.CurrentFile = CString::Format("%s - %s", this->Filename.str_szBuffer, e.CurrentFile.str_szBuffer);
+
+				throw e;
+			}
+
+			this->Writer.WriteBytes(bytecode, bytecodelen, false);
+			delete[] bytecode;
+
+			this->WriteJump(labelname_end);
+
+			if (labelname_nextblock != labelname_end) {
+				this->WriteLabel(labelname_nextblock);
+			}
+
+			if (nextif != 0) {
+				labelname_nextblock = nextif == 2 ? labelname_end : this->GetUniqueLabelName();
+
+				nextlineptr = this->ReadLine();
+				line = CString(nextlineptr);
+				delete nextlineptr;
+			}
+
+			curif = nextif;
 		}
+
+		this->WriteLabel(labelname_end);
 	}
 
 	void Compiler::WriteClass(CString line) {
@@ -2605,7 +2162,7 @@ doreturn:
 		CString args;
 		int argpos = this->FindChar(line, 0, "(", 1);
 		if (argpos != 0) {
-			int argendpos = this->FindChar(line, argpos + 1, ")", 1);
+			int argendpos = this->FindChar(line, argpos, ")", 1);
 			if (argendpos == -1)
 				this->ThrowError("Error, no ) at class");
 
@@ -2636,7 +2193,7 @@ doreturn:
 		int labelstart = this->Labels.Count();
 		int scopestart = this->Writer.Count;
 
-		Compiler chunkproc(name, chunk.str_szBuffer, chunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this);
+		Compiler chunkproc(name, chunk.str_szBuffer, chunk.Size(), this->WriteLineNumbers, this->Locals, this->Labels, this->Gotos, this->Warnings, this, this->LoopLabels);
 
 		byte* bytecode;
 		int bytecodelen;
@@ -2663,54 +2220,56 @@ doreturn:
 		delete[] bytecode;
 	}
 
-	void Compiler::WriteGoto(CString line) {
-		line = line.Substring(5).Trim();
-
-		for (int i = 0; i < line.Size(); i++) {
-			char c = line[i];
-
-			if ((c <= 'a' || c <= 'z') && (c <= 'A' && c >= 'Z')) {
-				this->ThrowError("Invalid label name. Labels cannot contain any non-letters");
-			}
-		}
-
-		int dept = -1;
+	void Compiler::WriteJump(CString line) {
 		int pos = 0;
 		Compiler* uplink = this;
 		while (uplink != null) {
 			pos += uplink->Writer.Count;
-			dept++;
-
 			uplink = uplink->Parent;
 		}
 
-		this->Writer.WriteByte(Misc::ExecFuncs::Goto);
-		this->Gotos.Add(CompilerLabelData(line, pos + 1, dept, this->CurrentStatmentLine + this->CurrentLineParent));
-		this->Writer.WriteShort(0); // stack balance
+		this->Writer.WriteOperator(Operators::Jump);
+		this->Gotos.Add(CompilerLabelData(line, pos + 1, this->CurrentStatmentLine + this->CurrentLineParent));
+		this->Writer.WriteInt(0); // jmp pos
+	}
+
+	void Compiler::WriteJumpNT(CString line) {
+		int pos = 0;
+		Compiler* uplink = this;
+		while (uplink != null) {
+			pos += uplink->Writer.Count;
+			uplink = uplink->Parent;
+		}
+
+		this->Writer.WriteOperator(Operators::JumpNT);
+		this->Gotos.Add(CompilerLabelData(line, pos + 1, this->CurrentStatmentLine + this->CurrentLineParent));
 		this->Writer.WriteInt(0); // jmp pos
 	}
 
 	void Compiler::WriteLabel(CString line) {
-		line = line.Substring(0, line.Size() - 1);
-
-		for (int i = 0; i < line.Size(); i++) {
-			char c = line[i];
-
-			if ((c <= 'a' || c <= 'z') && (c <= 'A' && c >= 'Z')) {
-				this->ThrowError("Invalid label name. Labels cannot contain any non-letters");
-			}
-		}
-
-		int dept = -1;
 		int pos = 0;
 		Compiler* uplink = this;
 		while (uplink != null) {
 			pos += uplink->Writer.Count;
-			dept++;
-
 			uplink = uplink->Parent;
 		}
 
-		this->Labels[line] = CompilerLabelData(line, pos, dept, this->CurrentStatmentLine + this->CurrentLineParent);
+		this->Labels[line] = CompilerLabelData(line, pos, this->CurrentStatmentLine + this->CurrentLineParent);
+	}
+
+	void Compiler::WriteBreak(CString line) {
+		if (this->LoopLabels.Count == 0) {
+			this->ThrowError("Unexpected break keyword");
+		}
+
+		this->WriteJump(this->LoopLabels[this->LoopLabels.Count - 1]);
+	}
+
+	void Compiler::WriteContinue(CString line) {
+		if (this->LoopLabels.Count == 0) {
+			this->ThrowError("Unexpected break keyword");
+		}
+
+		this->WriteJump(this->LoopLabels[this->LoopLabels.Count - 2]);
 	}
 }

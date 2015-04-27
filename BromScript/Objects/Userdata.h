@@ -37,7 +37,7 @@ namespace BromScript{
 		Scratch::CString Name;
 		Instance* BromScript;
 
-		BSFunction Operators[Misc::ArithmaticFuncs::_END - Misc::ArithmaticFuncs::Add + 1]; // same amount as Misc::ArithmaticFuncs
+		BSFunction OperatorsOverrides[(int)Operators::Arithmetic_END - (int)Operators::Arithmetic_START - 1]; // same amount as Misc::ArithmaticFuncs
 		List<Userdata*> Members;
 		Scratch::CDictionary<Scratch::CString, BSFunction> Functions;
 
@@ -50,7 +50,7 @@ namespace BromScript{
 		void RegisterMember(Scratch::CString name, int offset, int type);
 		void RegisterMember(Scratch::CString name, int offset, int type, BSSetFunction setter, BSGetFunction getter);
 		void RegisterFunction(Scratch::CString name, BSFunction function);
-		void RegisterOperator(int opcode, BSFunction function);
+		void RegisterOperator(Operators opcode, BSFunction function);
 
 		Userdata* Copy();
 	};

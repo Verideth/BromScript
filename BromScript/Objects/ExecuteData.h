@@ -29,22 +29,34 @@
 namespace BromScript {
 	class ExecuteData {
 	public:
+		Variable** Stack;
+		int StackSize;
+		int StackPos;
+
 		ExecuteData(void);
 		~ExecuteData(void);
 
 		Instance* BromScript;
 		ByteReader* Reader;
 
-		bool Breaking;
-		bool Continueing;
-		bool FuncCallback;
 		Function* Function;
 
-		bool HasReturnValue;
-		Variable* Returning;
+		void AllocateMoreSpace(int num);
 
-		int GotoReset;
-		int GotoDeptDiff;
+		inline void PushStack(Variable* var) {
+			if (this->StackPos > this->StackSize) this->AllocateMoreSpace(32);
+
+			BS_REF_INCREESE(var);
+			this->Stack[this->StackPos++] = var;
+		}
+
+		inline Variable* PopStack() {
+			Variable* ret = this->Stack[--this->StackPos];
+			this->Stack[this->StackPos] = null;
+
+			BS_REF_DECREESE(ret);
+			return ret;
+		}
 	};
 }
 

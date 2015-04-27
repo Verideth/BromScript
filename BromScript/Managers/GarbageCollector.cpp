@@ -18,19 +18,32 @@
 
 #include "../Managers/GarbageCollector.h"
 #include "../Objects/ArgumentData.h"
+#include "../Objects/Pool.h"
 
 using namespace Scratch;
 
 namespace BromScript{
 	GarbageCollector::GarbageCollector() {
+		this->Pools = null;
 		this->Buffer = null;
+
 		this->BufferSize = 0;
-		this->NullStart = 0;
+		this->PoolsSize = 0;
+		this->CurrentPool = -1;
 		this->FrameSkip = 0;
+
+		this->NullStart = 0;
+
 		this->AllocateMoreSpace();
+		this->AllocateMorePools();
 	}
 
 	GarbageCollector::~GarbageCollector() {
+		if (this->Buffer == null) return;
+		this->SelfDestruct();
+	}
+
+	void GarbageCollector::SelfDestruct() {
 		bool isdone = false;
 		while (!isdone) {
 			isdone = true;
@@ -43,13 +56,16 @@ namespace BromScript{
 					isdone = false;
 					vars.Add(var);
 					if (var->GetRefCount() == 0) {
-						for (int i2 = 0; i2 < this->BufferSize; i2++) {
-							if (var == this->Buffer[i2]) {
-								this->Buffer[i2] = null;
-							}
-						}
+						this->Buffer[i] = null;
 
-						delete var;
+						if (var->PoolRef.ID == -1) {
+							delete var;
+						} else {
+							Pool* p = this->Pools[var->PoolRef.ID];
+							var->EmptyValue();
+							var->RegisteredInGC = false;
+							p->Free(var);
+						}
 					} else if (var->Type == VariableType::Table) {
 						var->GetTable()->Clear();
 					} else if (var->Type == VariableType::Function) {
@@ -64,33 +80,25 @@ namespace BromScript{
 					}
 				}
 			}
-			
+
 			continue;
 		}
 
 		free(this->Buffer);
+		free(this->Pools);
+		this->Pools = null;
+		this->Buffer = null;
+
+		this->BufferSize = 0;
+		this->PoolsSize = 0;
+		this->CurrentPool = 0;
+		this->FrameSkip = 0;
+
+		this->NullStart = 0;
 	}
 
 	BS_FUNCTION(GarbageCollector::RunWrapper) {
-		return Converter::ToVariable(args->BromScript->GC.Run());
-	}
-
-	void GarbageCollector::RunFrame() {
-		this->FrameSkip++;
-		if (this->FrameSkip < 1024) return;
-
-		this->FrameSkip = 0;
-
-		for (int i = 0; i < this->BufferSize; i++) {
-			Variable* var = this->Buffer[i];
-
-			if (var != null && var->GetRefCount() == 0) {
-				delete var;
-				this->Buffer[i] = null;
-
-				if (i < this->NullStart) this->NullStart = i;
-			}
-		}
+		return Converter::ToVariable(args->BromScript, args->BromScript->GC.Run());
 	}
 
 	int GarbageCollector::Run() {
@@ -100,14 +108,21 @@ namespace BromScript{
 		int curc = 1337;
 		while (curc > 0) {
 			curc = 0;
-			for (int i = 0; i < this->BufferSize; i++) {
+			for (int i = 0; i < this->PoolsSize; i++) {
 				Variable* var = this->Buffer[i];
 				if (var != null && var->GetRefCount() == 0) {
 					curc++;
 
-					delete var;
-					this->Buffer[i] = null;
+					if (var->PoolRef.ID == -1) {
+						delete var;
+					} else {
+						Pool* p = this->Pools[var->PoolRef.ID];
+						var->EmptyValue();
+						var->RegisteredInGC = false;
+						p->Free(var);
+					}
 
+					this->Buffer[i] = null;
 					if (i < this->NullStart) this->NullStart = i;
 				}
 			}
@@ -118,30 +133,48 @@ namespace BromScript{
 		return cleaned * sizeof(Variable);
 	}
 
-	Variable* GarbageCollector::RegisterVariable() {
-		Variable* var = new Variable();
-		var->RegisteredInGC = true;
+	void GarbageCollector::RunFrame() {
+		this->FrameSkip++;
+		if (this->FrameSkip < 512) return;
 
-		this->Buffer[this->NullStart] = var;
+		this->FrameSkip = 0;
 
-		bool foundnext = false;
-		for (int i = this->NullStart + 1; i < this->BufferSize; i++) {
-			if (this->Buffer[i] == null) {
-				this->NullStart = i;
-				foundnext = true;
-				break;
+		for (int i = 0; i < this->BufferSize; i++) {
+			Variable* var = this->Buffer[i];
+
+			if (var != null && var->GetRefCount() == 0) {
+				if (var->PoolRef.ID == -1) {
+					delete var;
+				} else {
+					Pool* p = this->Pools[var->PoolRef.ID];
+					var->EmptyValue();
+					var->RegisteredInGC = false;
+					p->Free(var);
+				}
+
+				this->Buffer[i] = null;
+				if (i < this->NullStart) this->NullStart = i;
 			}
 		}
-
-		if (!foundnext) {
-			this->AllocateMoreSpace();
-			this->NullStart++;
-		}
-
-		this->FrameSkip++;
-		return var;
 	}
 
+	// use pooling
+	Variable* GarbageCollector::GetPooledVariable() {
+		Variable* ret = this->Pools[this->CurrentPool]->GetNext();
+		if (ret != null) return this->RegisterVariable(ret);
+
+		// fallback
+		for (int i = 0; i < this->PoolsSize; i++) {
+			ret = this->Pools[this->CurrentPool]->GetNext();
+			if (ret != null) return this->RegisterVariable(ret);
+		}
+
+		// fallback's fallback
+		this->AllocateMorePools();
+		return this->RegisterVariable(this->Pools[this->CurrentPool]->GetNext());
+	}
+	
+	// don't use pooling
 	Variable* GarbageCollector::RegisterVariable(Variable* var) {
 		if (var->RegisteredInGC)
 			return var;
@@ -179,5 +212,19 @@ namespace BromScript{
 		memset(newbuff + (this->BufferSize - 1024), 0, sizeof(Variable*) * 1024);
 
 		this->Buffer = newbuff;
+	}
+
+	void GarbageCollector::AllocateMorePools() {
+		this->PoolsSize++;
+		Pool** newbuff = (Pool**)malloc(sizeof(Pool*) * this->PoolsSize);
+
+		if (this->Pools != null) {
+			memcpy(newbuff, this->Pools, sizeof(Pool*) * (this->PoolsSize - 1));
+			free(this->Pools);
+		}
+
+		this->Pools = newbuff;
+		this->CurrentPool++;
+		this->Pools[this->CurrentPool] = new Pool(this->CurrentPool);
 	}
 }

@@ -41,94 +41,94 @@ namespace BromScript{
 			BS_FUNCTION(Random) {
 				if (CheckInput(args, 0, 2)) return null;
 
-				if (args->Count == 0) return Converter::ToVariable((double)rand() / (double)RAND_MAX);
-				if (args->Count == 1) return Converter::ToVariable((double)rand() / (double)RAND_MAX * args->GetNumber(0));
-				else return Converter::ToVariable((double)rand() / (double)RAND_MAX * (args->GetNumber(1) - args->GetNumber(0)) + args->GetNumber(0));
+				if (args->Count == 0) return Converter::ToVariable(bsi, (double)rand() / (double)RAND_MAX);
+				if (args->Count == 1) return Converter::ToVariable(bsi, (double)rand() / (double)RAND_MAX * args->GetNumber(0));
+				else return Converter::ToVariable(bsi, (double)rand() / (double)RAND_MAX * (args->GetNumber(1) - args->GetNumber(0)) + args->GetNumber(0));
 			}
 
 			BS_FUNCTION(Floor) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(floor(args->GetNumber(0)));
+				return Converter::ToVariable(bsi, floor(args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(Min) {
 				if (CheckInput(args, 2, 2)) return null;
-				return Converter::ToVariable(args->GetNumber(0) < args->GetNumber(1) ? args->GetNumber(0) : args->GetNumber(1));
+				return Converter::ToVariable(bsi, args->GetNumber(0) < args->GetNumber(1) ? args->GetNumber(0) : args->GetNumber(1));
 			}
 
 			BS_FUNCTION(Max) {
 				if (CheckInput(args, 2, 2)) return null;
-				return Converter::ToVariable(args->GetNumber(0) > args->GetNumber(1) ? args->GetNumber(0) : args->GetNumber(1));
+				return Converter::ToVariable(bsi, args->GetNumber(0) > args->GetNumber(1) ? args->GetNumber(0) : args->GetNumber(1));
 			}
 
 			BS_FUNCTION(Ceiling) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(ceil(args->GetNumber(0)));
+				return Converter::ToVariable(bsi, ceil(args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(Round) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(floor(args->GetNumber(0) + 0.5));
+				return Converter::ToVariable(bsi, floor(args->GetNumber(0) + 0.5));
 			}
 
 			BS_FUNCTION(Atan) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(atan(args->GetNumber(0)));
+				return Converter::ToVariable(bsi, atan(args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(Atan2) {
 				if (CheckInput(args, 2, 2)) return null;
-				return Converter::ToVariable(atan2(args->GetNumber(0), args->GetNumber(1)));
+				return Converter::ToVariable(bsi, atan2(args->GetNumber(0), args->GetNumber(1)));
 			}
 
 			BS_FUNCTION(Cos) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(cos(args->GetNumber(0)));
+				return Converter::ToVariable(bsi, cos(args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(Sin) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(sin(args->GetNumber(0)));
+				return Converter::ToVariable(bsi, sin(args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(Tan) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(tan(args->GetNumber(0)));
+				return Converter::ToVariable(bsi, tan(args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(Pow) {
 				if (CheckInput(args, 2, 2)) return null;
-				return Converter::ToVariable(pow(args->GetNumber(0), args->GetNumber(1)));
+				return Converter::ToVariable(bsi, pow(args->GetNumber(0), args->GetNumber(1)));
 			}
 
 			BS_FUNCTION(Sign) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable((double)(args->GetNumber(0) < 0 ? -1 : args->GetNumber(0) > 0 ? 1 : 0));
+				return Converter::ToVariable(bsi, (float)(args->GetNumber(0) < 0 ? -1 : args->GetNumber(0) > 0 ? 1 : 0));
 			}
 
 			BS_FUNCTION(Sqrt) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(sqrt(args->GetNumber(0)));
+				return Converter::ToVariable(bsi, sqrt(args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(Abs) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(abs(args->GetNumber(0)));
+				return Converter::ToVariable(bsi, abs(args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(Neg) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(-abs(args->GetNumber(0)));
+				return Converter::ToVariable(bsi, -abs(args->GetNumber(0)));
 			}
 
 			BS_FUNCTION(ToRadians) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(BS_PI * args->GetNumber(0) / 180.0);
+				return Converter::ToVariable(bsi, BS_PI * args->GetNumber(0) / 180.0);
 			}
 
 			BS_FUNCTION(ToDegrees) {
 				if (CheckInput(args, 1, 1)) return null;
-				return Converter::ToVariable(args->GetNumber(0) * (180.0 / BS_PI));
+				return Converter::ToVariable(bsi, args->GetNumber(0) * (180.0 / BS_PI));
 			}
 		}
 	}

@@ -136,7 +136,7 @@ namespace BromScript{
 						return null;
 
 					if (c == '\n')
-						return Converter::ToVariable(buffer);
+						return Converter::ToVariable(bsi, buffer);
 
 					buffer += c;
 				}

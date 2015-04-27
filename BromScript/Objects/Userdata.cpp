@@ -26,7 +26,7 @@ using namespace Scratch;
 
 namespace BromScript{
 	Userdata::Userdata() :CallDTor(false), Name(""), Offset(0), TypeID(0), TypeSize(0), Getter(null), Setter(null) {
-		memset(this->Operators, 0, sizeof(this->Operators));
+		memset(this->OperatorsOverrides, 0, sizeof(this->OperatorsOverrides));
 	}
 
 	Userdata::~Userdata(void) {
@@ -55,14 +55,14 @@ namespace BromScript{
 		for (int i = 0; i < this->Functions.Count(); i++)
 			ud->Functions.Add(this->Functions.GetKeyByIndex(i), this->Functions.GetValueByIndex(i));
 
-		for (int i = 0; i < 25; i++)
-			ud->Operators[i] = this->Operators[i];
+		for (int i = 0; i < (int)Operators::Arithmetic_END - (int)Operators::Arithmetic_START - 1; i++)
+			ud->OperatorsOverrides[i] = this->OperatorsOverrides[i];
 
 		return ud;
 	}
 
-	void Userdata::RegisterOperator(int opcode, BSFunction func) {
-		this->Operators[opcode - 100] = func;
+	void Userdata::RegisterOperator(Operators opcode, BSFunction func) {
+		this->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(opcode)] = func;
 	}
 
 	void Userdata::RegisterMember(CString name, int offset, int type) {

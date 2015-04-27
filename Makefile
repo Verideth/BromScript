@@ -11,17 +11,18 @@ objfiles_bsexec := $(patsubst %.cpp,%.o,$(sourcefiles_bsexec))
 print-%: ; @echo $*=$($*)
 
 .PHONY: all
-all: bin/libBromScript.a bin/bsexec
-# bin/libBromScript.so
+all: bin/libBromScript.so bin/bsexec
+#bin/libBromScript.a
 
-#bin/libBromScript.so: $(objfiles_bromscript)
-#	$(CXX) -g -ggdb -std=c++11 $(OPTIMIZEFLAG) $(INCLUDES) -shared -o bin/libBromScript.so $(objfiles_bromscript) $(LIBS)
+bin/libBromScript.so: $(objfiles_bromscript)
+	$(CXX) -g -ggdb -std=c++11 $(OPTIMIZEFLAG) $(INCLUDES) -shared -o bin/libBromScript.so $(objfiles_bromscript) $(LIBS)
+	cp bin/libBromScript.so /lib
 
-bin/libBromScript.a: $(objfiles_bromscript)
-	ar -cvq bin/libBromScript.a $(objfiles_bromscript)
+#bin/libBromScript.a: $(objfiles_bromscript)
+#	ar -cvq bin/libBromScript.a $(objfiles_bromscript)
 
 bin/bsexec: $(objfiles_bsexec)
-	$(CXX) -g -ggdb -std=c++11 $(OPTIMIZEFLAG) $(INCLUDES) -o bin/bsexec $(objfiles_bsexec) -lreadline -lBromScript $(LIBS)
+	$(CXX) -g -ggdb -std=c++11 $(OPTIMIZEFLAG) $(INCLUDES) -o bin/bsexec $(objfiles_bsexec) -lreadline $(LIBS) -lBromScript
 
 %.o : %.cpp
 	$(CXX) -g -ggdb -std=c++11 $(OPTIMIZEFLAG) $(INCLUDES) $(LIBS) -c $< -o $@

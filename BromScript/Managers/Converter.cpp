@@ -72,10 +72,11 @@ namespace BromScript{
 		if (member->Type > MemberType::Bool)
 			return member;
 
-		Variable* var = bromscript->GC.RegisterVariable();
+		Variable* var = bromscript->GC.GetPooledVariable();
 		var->IsCpp = member->IsCpp;
 		var->Value = member->Value;
 		var->Type = member->Type;
+		var->DeleteOnDestruct = false;
 
 		switch (udi->TypeData->TypeID) {
 			case MemberType::Bool:
@@ -122,65 +123,64 @@ namespace BromScript{
 		varfunc->IsCpp = true;
 		varfunc->Name = key;
 
-		Variable* ret = new Variable();
+		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Function;
 		ret->Value = varfunc;
-		ret->DeleteOnDestruct = false;
 
 		return ret;
 	}
 
-	Variable* Converter::ToVariable(bool value) {
-		Variable* ret = new Variable();
+	Variable* Converter::ToVariable(Instance* bromscript, bool value) {
+		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Bool;
 		ret->Value = Converter::BoolToPointer(value);
 		return ret;
 	}
 
-	Variable* Converter::ToVariable(double value) {
-		Variable* ret = new Variable();
+	Variable* Converter::ToVariable(Instance* bromscript, double value) {
+		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Number;
 		ret->Value = Converter::NumberToPointer(value);
 		return ret;
 	}
 
-	Variable* Converter::ToVariable(float value) {
-		Variable* ret = new Variable();
+	Variable* Converter::ToVariable(Instance* bromscript, float value) {
+		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Number;
 		ret->Value = Converter::NumberToPointer(value);
 		return ret;
 	}
 
-	Variable* Converter::ToVariable(int value) {
-		Variable* ret = new Variable();
+	Variable* Converter::ToVariable(Instance* bromscript, int value) {
+		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Number;
 		ret->Value = Converter::NumberToPointer(value);
 		return ret;
 	}
 
-	Variable* Converter::ToVariable(long long value) {
-		Variable* ret = new Variable();
+	Variable* Converter::ToVariable(Instance* bromscript, long long value) {
+		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Number;
 		ret->Value = Converter::NumberToPointer((double)value);
 		return ret;
 	}
 
-	Variable* Converter::ToVariable(const char* value) {
-		Variable* ret = new Variable();
+	Variable* Converter::ToVariable(Instance* bromscript, const char* value) {
+		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::String;
 		ret->Value = Converter::StringToPointer(value);
 		return ret;
 	}
 
-	Variable* Converter::ToVariable(CString value) {
-		Variable* ret = new Variable();
+	Variable* Converter::ToVariable(Instance* bromscript, CString value) {
+		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::String;
 		ret->Value = Converter::StringToPointer(value);
 		return ret;
 	}
 
-	Variable* Converter::ToVariable(Table* value) {
-		Variable* ret = new Variable();
+	Variable* Converter::ToVariable(Instance* bromscript, Table* value) {
+		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Table;
 		ret->Value = value;
 		return ret;
@@ -189,7 +189,7 @@ namespace BromScript{
 	CString Converter::VariableToString(Variable* var) {
 		switch (var->Type) {
 			case VariableType::String: return var->GetString(); break;
-			case VariableType::Number: return CString(var->GetNumber()); break;
+			case VariableType::Number: return CString::Format("%d", (int)var->GetNumber()); break;
 			case VariableType::Function: return "Function"; break;
 			case VariableType::Bool: return var->GetBool() ? "True" : "False"; break;
 			case VariableType::Null: return "NULL"; break;
@@ -208,7 +208,7 @@ namespace BromScript{
 	CString Converter::VariableToString(Instance* bromscript, Variable* var) {
 		switch (var->Type) {
 			case VariableType::String: return var->GetString(); break;
-			case VariableType::Number: return CString(var->GetNumber()); break;
+			case VariableType::Number: return CString::Format("%d", (int)var->GetNumber()); break;
 			case VariableType::Function: return "function"; break;
 			case VariableType::Bool: return var->GetBool() ? "true" : "false"; break;
 			case VariableType::Null: return "null"; break;
@@ -221,11 +221,11 @@ namespace BromScript{
 
 			default:
 				Userdata* ud = ((UserdataInstance*)var->Value)->TypeData;
-				if (ud->Operators[Misc::ArithmaticFuncs::ToString - 100] != null) {
+				if (ud->OperatorsOverrides[(int)Operators::ArithmeticToString - (int)Operators::Arithmetic_START - 1] != null) {
 					ArgumentData args;
 					args.ThisObject = var;
 
-					Variable* ret = ud->Operators[Misc::ArithmaticFuncs::ToString - 100](bromscript, &args);
+					Variable* ret = ud->OperatorsOverrides[(int)Operators::ArithmeticToString - (int)Operators::Arithmetic_START - 1](bromscript, &args);
 					if (ret == null) return "NULL";
 					else bromscript->GC.RegisterVariable(ret);
 

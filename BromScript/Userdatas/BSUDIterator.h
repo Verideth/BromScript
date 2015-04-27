@@ -16,21 +16,18 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	*/
 
-#ifndef BROMSCRIPT_LIBARIES_INCLUDED
-#define BROMSCRIPT_LIBARIES_INCLUDED
+#ifndef BROMSCRIPT_USERDATA_ITERATOR_INCLUDED
+#define BROMSCRIPT_USERDATA_ITERATOR_INCLUDED
+#define BROMSCRIPT_USERDATA_ITERATOR_TYPE 56
 
-#include "Libaries/BSLibMath.h"
-#include "Libaries/BSLibGlobal.h"
-#include "Libaries/BSLibString.h"
-#include "Libaries/BSLibDebug.h"
-#include "Libaries/BSLibConsole.h"
+#include "../SIF.h"
 
-#include "Userdatas/BSUDIterator.h"
-#include "Userdatas/BSUDSocket.h"
-#include "Userdatas/BSUDPacket.h"
-#include "Userdatas/BSUDIO.h"
-#include "Userdatas/BSUDInterop.h"
-#include "Userdatas/BSUDInteropMethod.h"
-#include "Userdatas/BSUDRawData.h"
+namespace BromScript{
+	namespace Userdatas{
+		namespace Iterator{
+			void RegisterUD(BromScript::Instance* bsi);
+		}
+	}
+}
 
 #endif

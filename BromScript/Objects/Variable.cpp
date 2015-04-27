@@ -27,21 +27,22 @@
 using namespace Scratch;
 
 namespace BromScript {
-	Variable::Variable(void) :IsCpp(false), ReadOnly(false), Value(null), Type(VariableType::Null), DeleteOnDestruct(true), Using(0), RegisteredInGC(false) {
+	Variable::Variable() :IsCpp(false), ReadOnly(false), Value(null), Type(VariableType::Null), DeleteOnDestruct(true), Using(0), RegisteredInGC(false) {
 	}
 
-	Variable::~Variable(void) {
+	Variable::~Variable() {
 		this->EmptyValue();
 	}
 
 	void Variable::EmptyValue() {
-		if (!this->DeleteOnDestruct && this->Value == null) {
+		if (!this->DeleteOnDestruct) {
 			this->Type = VariableType::Null;
 			this->Value = null;
 			return;
 		}
 
 		switch (this->Type) {
+			case VariableType::Null: break;
 			case VariableType::Bool: break;
 			case VariableType::Class: delete (BromScript::Function*)(this->Value); break;
 			case VariableType::Function: delete (BromScript::Function*)(this->Value); break;

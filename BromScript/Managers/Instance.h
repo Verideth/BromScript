@@ -72,6 +72,7 @@ namespace BromScript {
 		void RegisterScope(Function* scope);
 
 		Userdata* GetRegisteredUserdata(int typeID);
+		Userdata* GetRegisteredUserdata(Scratch::CString name);
 		Userdata* RegisterUserdata(Scratch::CString name, int typeID, int typesize, BSFunctionCtor ctor, BSFunctionDtor dtor);
 		Variable* CreateUserdata(int typeID, void* ptr, bool calldtor);
 

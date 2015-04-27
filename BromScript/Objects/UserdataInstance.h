@@ -14,6 +14,9 @@ namespace BromScript{
 
 		UserdataInstance(void);
 		~UserdataInstance(void);
+
+		Variable* GetIndex(Variable* selfobj, Variable* keyvar);
+		void SetIndex(Variable* selfobj, Variable* keyvar, Variable* value);
 	};
 }
 

@@ -20,6 +20,7 @@
 #define BROMSCRIPT_BW_INCLUDED
 
 #include "../SIF.h"
+#include "../Misc.h"
 #include "../Objects/List.h"
 #include "../Scratch/CString.h"
 
@@ -33,6 +34,7 @@ namespace BromScript {
 		ByteWriter(void);
 		~ByteWriter(void);
 
+		void WriteOperator(Operators op);
 		void WriteBool(bool value);
 		void WriteByte(byte value);
 		void WriteBytes(byte* value, int size, bool writelen);

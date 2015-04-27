@@ -83,7 +83,6 @@ namespace BromScript {
 		p.WriteString("Function_Code"); p.WriteShort(offsetof(Function, Code));
 		p.WriteString("Function_CurrentThisObject"); p.WriteShort(offsetof(Function, CurrentThisObject));
 		p.WriteString("Function_CurrentSourceFileLine"); p.WriteShort(offsetof(Function, CurrentSourceFileLine));
-		p.WriteString("Function_ForceReturn"); p.WriteShort(offsetof(Function, ForceReturn));
 		p.WriteString("Function_IsCpp"); p.WriteShort(offsetof(Function, IsCpp));
 		p.WriteString("Function_CppFunc"); p.WriteShort(offsetof(Function, CppFunc));
 

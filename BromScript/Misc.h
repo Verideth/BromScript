@@ -37,6 +37,39 @@ namespace BromScript {
 			Add = 100, Substract, Divide, Multiply, And, Or, GreaterThan, LessThan, GreaterOrEqual, LessOrEqual, Equal, NotEqual, BitwiseLeft, BitwiseRight, BitwiseOr, BitwiseAnd, Modulo, Call, GetIndex, SetIndex, Count, ToString, _END
 		};
 	};
+
+	enum class Operators {
+		EndScope,
+
+		Set, SetL,
+		Get, GetL,
+		Call, CallThis,
+		GetIndex, SetIndex,
+		AddIndex, New,
+		GetCount,
+
+		Jump, JumpNT,
+		Return, Delete,
+
+		StackNumber,
+		StackString,
+		StackTable,
+		StackBool,
+		StackNull,
+		StackFunction,
+		Pop, Duplicate,
+
+		PreIncrement, PostIncrement,
+		PreDecrement, PostDecrement,
+
+		Arithmetic_START, ArithmeticAdd, ArithmeticSubstract, ArithmeticDivide, ArithmeticMultiply, ArithmeticAnd, ArithmeticOr,
+		ArithmeticGreaterThan, ArithmeticLessThan, ArithmeticGreaterOrEqual, ArithmeticLessOrEqual, ArithmeticEqual,
+		ArithmeticNotEqual, ArithmeticBitwiseLeft, ArithmeticBitwiseRight, ArithmeticBitwiseOr, ArithmeticBitwiseAnd,
+		ArithmeticModulo, ArithmeticCall, ArithmeticGetIndex, ArithmeticSetIndex, ArithmeticGetCount, ArithmeticToString,
+		Arithmetic_END,
+
+		GlobalLocals = 157, StringTable = 253, CurrentLine = 254, Skip = 255
+	};
 }
 
 #endif

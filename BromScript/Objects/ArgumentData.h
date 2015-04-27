@@ -57,6 +57,8 @@ namespace BromScript {
 		bool CheckThisObject(int type, bool throwerror);
 
 		bool ErrorOccured();
+		void Clear();
+		void SetThisObject(Variable* var);
 
 		const char* GetString(int index);
 		double GetNumber(int index);

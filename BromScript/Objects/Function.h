@@ -45,7 +45,7 @@ namespace BromScript {
 
 		void SetReferences(Function* func, int entrypoint);
 
-		void SetVar(Scratch::CString key, Variable* var, int localindex);
+		void SetVar(Variable* var, int localindex);
 		void SetVar(Scratch::CString key, Variable* var, bool global);
 		Variable* GetVar(Scratch::CString var);
 

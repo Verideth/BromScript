@@ -48,7 +48,7 @@ namespace BromScript {
 					return null;
 				}
 
-				return Converter::ToVariable(fs->Open(args->GetString(0), args->GetString(1)));
+				return Converter::ToVariable(bsi, fs->Open(args->GetString(0), args->GetString(1)));
 			}
 
 			BS_FUNCTION(Close) {
@@ -90,7 +90,7 @@ namespace BromScript {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_IO_TYPE, true))return null;
 				Scratch::CFileStream* fs = (Scratch::CFileStream*)args->GetThisObjectData();
 
-				return Converter::ToVariable((double)fs->Size());
+				return Converter::ToVariable(bsi, (double)fs->Size());
 			}
 
 			void RegisterUD(BromScript::Instance* bsi) {

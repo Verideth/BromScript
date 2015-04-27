@@ -38,42 +38,42 @@ namespace BromScript{
 
 			BS_FUNCTION(ReadBool) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_PACKET_TYPE, true))return null;
-				return Converter::ToVariable(((BromScript::Packet*)args->GetThisObjectData())->ReadBool());
+				return Converter::ToVariable(bsi, ((BromScript::Packet*)args->GetThisObjectData())->ReadBool());
 			}
 
 			BS_FUNCTION(ReadByte) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_PACKET_TYPE, true))return null;
-				return Converter::ToVariable((double)((BromScript::Packet*)args->GetThisObjectData())->ReadByte());
+				return Converter::ToVariable(bsi, (double)((BromScript::Packet*)args->GetThisObjectData())->ReadByte());
 			}
 
 			BS_FUNCTION(ReadShort) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_PACKET_TYPE, true))return null;
-				return Converter::ToVariable((double)((BromScript::Packet*)args->GetThisObjectData())->ReadShort());
+				return Converter::ToVariable(bsi, (double)((BromScript::Packet*)args->GetThisObjectData())->ReadShort());
 			}
 
 			BS_FUNCTION(ReadInt) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_PACKET_TYPE, true))return null;
-				return Converter::ToVariable((double)((BromScript::Packet*)args->GetThisObjectData())->ReadInt());
+				return Converter::ToVariable(bsi, (double)((BromScript::Packet*)args->GetThisObjectData())->ReadInt());
 			}
 
 			BS_FUNCTION(ReadFloat) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_PACKET_TYPE, true))return null;
-				return Converter::ToVariable((double)((BromScript::Packet*)args->GetThisObjectData())->ReadFloat());
+				return Converter::ToVariable(bsi, (double)((BromScript::Packet*)args->GetThisObjectData())->ReadFloat());
 			}
 
 			BS_FUNCTION(ReadLong) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_PACKET_TYPE, true))return null;
-				return Converter::ToVariable((double)((BromScript::Packet*)args->GetThisObjectData())->ReadLong());
+				return Converter::ToVariable(bsi, (double)((BromScript::Packet*)args->GetThisObjectData())->ReadLong());
 			}
 
 			BS_FUNCTION(ReadDouble) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_PACKET_TYPE, true))return null;
-				return Converter::ToVariable(((BromScript::Packet*)args->GetThisObjectData())->ReadDouble());
+				return Converter::ToVariable(bsi, ((BromScript::Packet*)args->GetThisObjectData())->ReadDouble());
 			}
 
 			BS_FUNCTION(ReadString) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_PACKET_TYPE, true))return null;
-				return Converter::ToVariable(((BromScript::Packet*)args->GetThisObjectData())->ReadString());
+				return Converter::ToVariable(bsi, ((BromScript::Packet*)args->GetThisObjectData())->ReadString());
 			}
 
 			BS_FUNCTION(ReadLine) {
@@ -88,7 +88,7 @@ namespace BromScript{
 
 						Scratch::CString str;
 						str.str_szBuffer = buff;
-						return Converter::ToVariable(str);
+						return Converter::ToVariable(bsi, str);
 					}
 				}
 
@@ -98,7 +98,7 @@ namespace BromScript{
 
 					Scratch::CString str;
 					str.str_szBuffer = buff;
-					return Converter::ToVariable(str);
+					return Converter::ToVariable(bsi, str);
 				}
 
 				return null;
@@ -113,7 +113,7 @@ namespace BromScript{
 				memcpy(str.str_szBuffer, p->InBuffer, p->InSize);
 				str.str_szBuffer[p->InSize] = 0;
 
-				return Converter::ToVariable(str);
+				return Converter::ToVariable(bsi, str);
 			}
 
 			BS_FUNCTION(WriteBool) {

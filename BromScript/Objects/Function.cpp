@@ -16,7 +16,8 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	*/
 
-#include "../Objects/Function.h"
+#include "../Managers/Instance.h"
+#include "Function.h"
 
 using namespace Scratch;
 
@@ -78,7 +79,7 @@ namespace BromScript {
 			while (func != null) {
 				for (int i = 0; i < func->FixedLocalsCount; i++) {
 					if (func->FixedLocalKeys[i] == key) {
-						func->SetVar(key, var, i);
+						func->SetVar(var, i);
 						return;
 					}
 				}
@@ -97,13 +98,13 @@ namespace BromScript {
 
 		for (int i = 0; i < this->FixedLocalsCount; i++) {
 			if (this->FixedLocalKeys[i] == key) {
-				this->SetVar(key, var, i);
+				this->SetVar(var, i);
 				return;
 			}
 		}
 	}
 
-	void Function::SetVar(CString key, Variable* var, int localindex) {
+	void Function::SetVar(Variable* var, int localindex) {
 		Variable* oldvar = this->FixedLocalVars[localindex];
 		if (oldvar != null) {
 			BS_REF_DECREESE(oldvar);
@@ -118,6 +119,10 @@ namespace BromScript {
 	}
 
 	void Function::SetReferences(Function* func, int startoffset) {
+		while (func->CodeReferenceFunc != null) {
+			func = func->CodeReferenceFunc;
+		}
+
 		this->CodeReferenceFunc = func;
 
 		this->Code = func->Code;
@@ -196,13 +201,8 @@ namespace BromScript {
 	}
 
 	Variable* Function::Run(ArgumentData* args) {
-		if (this->BromScript->GetCurrentStackSize() >= 257) {
+		if (this->BromScript->GetCurrentStackSize() >= 80085) {
 			BS_THROW_ERROR(args, CString::Format("Stack error, cannot call '%s'", this->Name.str_szBuffer));
-			return this->BromScript->GetDefaultVarNull();
-		}
-
-		if (args->Count > 255) {
-			BS_THROW_ERROR(args, CString::Format("Param limit hit (255), cannot call '%s'", this->Name.str_szBuffer));
 			return this->BromScript->GetDefaultVarNull();
 		}
 
@@ -214,7 +214,7 @@ namespace BromScript {
 		}
 
 		if (this->IsCpp) {
-			args->ThisObject = this->CurrentThisObject;
+			args->SetThisObject(this->CurrentThisObject);
 
 			for (int i = 0; i < args->Count; i++) {
 				BS_REF_INCREESE(args->GetVariable(i));
@@ -237,7 +237,7 @@ namespace BromScript {
 		}
 
 		for (int i = 0; i < args->Count && i < this->Parameters.Count; i++) {
-			this->SetVar(this->Parameters[i], args->GetVariable(i), i);
+			this->SetVar(args->GetVariable(i), i);
 		}
 
 		this->BromScript->GC.RunFrame();
@@ -274,92 +274,76 @@ namespace BromScript {
 
 	Variable* Function::InternalRun(ExecuteData* data) {
 		while (true) {
-			if (data->GotoDeptDiff < 0) {
-				data->GotoDeptDiff++;
-
-				if (data->GotoDeptDiff == 0) {
-					data->HasReturnValue = false;
-				}
-
-				return null;
-			}
-
-			if (data->HasReturnValue || data->Breaking || data->Continueing || data->Function->ForceReturn)
-				return data->Returning;
-
-			if (data->BromScript->KillScriptThreaded)
+			if (data->Function->ForceReturn || data->BromScript->KillScriptThreaded)
 				return data->BromScript->GetDefaultVarNull();
 
-			Misc::ExecFuncs b = (Misc::ExecFuncs)data->Reader->ReadByte();
-
+			Operators b = (Operators)data->Reader->ReadByte();
 			switch (b) {
-				case Misc::ExecFuncs::GetVar: return Executer::GetVar(data); break;
-				case Misc::ExecFuncs::GetTblIndex:
-					if (data->FuncCallback) return Executer::GetTableIndex(data);
-					else Executer::GetTableIndex(data);
-					break;
+				case Operators::Skip: break;
+				case Operators::Pop: Executer::Pop(data); break;
+				case Operators::Duplicate: Executer::Duplicate(data); break;
+					
+				case Operators::AddIndex: Executer::AddIndex(data); break;
+				case Operators::GetIndex: Executer::GetIndex(data); break;
+				case Operators::SetIndex: Executer::SetIndex(data); break;
+				case Operators::Set: Executer::Set(data); break;
+				case Operators::SetL: Executer::SetL(data); break;
+				case Operators::PostIncrement: Executer::PostIncrement(data); break;
+				case Operators::PreIncrement: Executer::PreIncrement(data); break;
 
-				case Misc::ExecFuncs::SetTblIndex:Executer::SetTableIndex(data); break;
+				case Operators::StackNull: Executer::StackNull(data); break;
+				case Operators::StackBool: Executer::StackBool(data); break;
+				case Operators::StackNumber: Executer::StackNumber(data); break;
+				case Operators::StackTable: Executer::StackTable(data); break;
+				case Operators::StackString: Executer::StackString(data); break;
+				case Operators::StackFunction: Executer::StackFunction(data); break;
+				case Operators::Jump: Executer::Jump(data); break;
+				case Operators::JumpNT: Executer::JumpNT(data); break;
+				case Operators::Get: Executer::Get(data); break;
+				case Operators::GetL: Executer::GetL(data); break;
+				case Operators::StringTable: Executer::StringTable(data); break;
+				case Operators::GlobalLocals: Executer::GlobalLocals(data); break;
+				case Operators::CurrentLine: Executer::CurrentLine(data); break;
 
-				case Misc::ExecFuncs::SetVar: Executer::SetVar(data); break;
-				case Misc::ExecFuncs::LSetVar: Executer::LSetVar(data); break;
+				case Operators::Call: Executer::Call(data); break;
+				case Operators::CallThis: Executer::CallThis(data); break;
+				case Operators::GetCount: Executer::GetCount(data); break;
 
-				case Misc::ExecFuncs::PostIncrement: if (data->FuncCallback) return Executer::PostIncrement(data); else Executer::PostIncrement(data); break;
-				case Misc::ExecFuncs::PreIncrement: if (data->FuncCallback) return Executer::PreIncrement(data); else Executer::PreIncrement(data); break;
-				case Misc::ExecFuncs::PostDecrement: if (data->FuncCallback) return Executer::PostDecrement(data); else Executer::PostDecrement(data); break;
-				case Misc::ExecFuncs::PreDecrement: if (data->FuncCallback) return Executer::PreDecrement(data); else Executer::PreDecrement(data); break;
+				case Operators::New: Executer::New(data); break;
+				case Operators::Delete: Executer::Delete(data); break;
 
-				case Misc::ExecFuncs::If: Executer::If(data); break;
-				case Misc::ExecFuncs::ElseIf: Executer::If(data); break; // same as if
-				case Misc::ExecFuncs::Else: Executer::Else(data); break;
 
-				case Misc::ExecFuncs::For: Executer::For(data); break;
-				case Misc::ExecFuncs::ForEach: Executer::ForEach(data); break;
-				case Misc::ExecFuncs::While: Executer::While(data); break;
-				case Misc::ExecFuncs::Loop: Executer::Loop(data); break;
-				case Misc::ExecFuncs::Goto: Executer::Goto(data); break;
-				case Misc::ExecFuncs::Rewind: Executer::Rewind(data); break;
-				case Misc::ExecFuncs::Delete: Executer::Delete(data); break;
+				// these functions abort the execution, so put them here instead of in the Executer
+				case Operators::Return:{
+					if (data->Reader->ReadBool()) {
+						return data->PopStack();
+					} else {
+						return data->BromScript->GetDefaultVarNull();
+					}
+				}
 
-				case Misc::ExecFuncs::New: return Executer::New(data); break;
-				case Misc::ExecFuncs::Class: Executer::CreateClass(data); break;
-				case Misc::ExecFuncs::Function: Executer::CreateFunction(data); break;
-				case Misc::ExecFuncs::AnonFunction: return Executer::CreateAnonFunction(data); break;
-
-				case Misc::ExecFuncs::ExecuteFunction:
-					if (data->FuncCallback) return Executer::ExecuteFunction(data);
-					else Executer::ExecuteFunction(data);
-					break;
-
-				case Misc::ExecFuncs::End:
-					return data->BromScript->GetDefaultVarNull(); // lets give back null value.
-
-				case Misc::ExecFuncs::MergeStart: return Executer::Merge(data);
-				case Misc::ExecFuncs::Return: return Executer::Return(data);
-				case Misc::ExecFuncs::Break: data->Breaking = true; return data->FuncCallback ? data->BromScript->GetDefaultVarNull() : null;
-				case Misc::ExecFuncs::Continue: data->Continueing = true; return data->FuncCallback ? data->BromScript->GetDefaultVarNull() : null;
-
-				case Misc::ExecFuncs::GetCount: return Executer::GetCount(data);
-				case Misc::ExecFuncs::Bool: return Executer::GetBool(data);
-				case Misc::ExecFuncs::String: return Executer::GetString(data);
-				case Misc::ExecFuncs::Number: return Executer::GetNumber(data);
-				case Misc::ExecFuncs::Table: return Executer::GetTable(data);
-				case Misc::ExecFuncs::Enum: return Executer::GetEnum(data);
-
-				case Misc::ExecFuncs::Skip: break;
-				case Misc::ExecFuncs::StringTable: Executer::StringTable(data); break;
-				case Misc::ExecFuncs::GlobalLocals: Executer::GlobalLocals(data); break;
-				case Misc::ExecFuncs::CurrentLine:
-					this->CurrentSourceFileLine = data->Reader->ReadInt();
-					this->BromScript->Debug->Update();
-					break;
+				case Operators::EndScope: {
+					return data->BromScript->GetDefaultVarNull();
+				}
 
 				default:
-					BS_THROW_ERROR(data->BromScript, CString::Format("Invalid bytecode detected! (%d)", b));
+					if (b > Operators::Arithmetic_START && b < Operators::Arithmetic_END) {
+						Variable* right = data->PopStack();
+						Variable* left = data->PopStack();
 
-					data->HasReturnValue = true;
-					data->Returning = data->BromScript->GetDefaultVarNull();
-					return data->Returning;
+						int op = (int)b + (Misc::ArithmaticFuncs::Add - (int)Operators::Arithmetic_START - 1);
+
+						BS_REF_INCREESE(left);
+						BS_REF_INCREESE(right);
+						data->PushStack(data->BromScript->GC.RegisterVariable(Executer::Arithmatic(data, left, right, (Misc::ArithmaticFuncs)op)));
+						BS_REF_DECREESE(right);
+						BS_REF_DECREESE(left);
+
+						break;
+					}
+
+					BS_THROW_ERROR(data->BromScript, CString::Format("Invalid bytecode detected! (%d)", b));
+					return data->BromScript->GetDefaultVarNull();
 			}
 		}
 	}

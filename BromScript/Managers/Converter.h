@@ -29,14 +29,14 @@ namespace BromScript{
 
 	class Converter {
 	public:
-		static Variable* ToVariable(bool value);
-		static Variable* ToVariable(double value);
-		static Variable* ToVariable(int value);
-		static Variable* ToVariable(long long value);
-		static Variable* ToVariable(float value);
-		static Variable* ToVariable(const char* value);
-		static Variable* ToVariable(Scratch::CString value);
-		static Variable* ToVariable(Table* value);
+		static Variable* ToVariable(Instance* bromscript, bool value);
+		static Variable* ToVariable(Instance* bromscript, double value);
+		static Variable* ToVariable(Instance* bromscript, int value);
+		static Variable* ToVariable(Instance* bromscript, long long value);
+		static Variable* ToVariable(Instance* bromscript, float value);
+		static Variable* ToVariable(Instance* bromscript, const char* value);
+		static Variable* ToVariable(Instance* bromscript, Scratch::CString value);
+		static Variable* ToVariable(Instance* bromscript, Table* value);
 		static Variable* ToVariable(Instance* bromscript, const char* key, BSFunction value);
 		static Variable* ToVariable(Instance* bromscript, Scratch::CString key, BSFunction value);
 

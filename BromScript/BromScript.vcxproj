@@ -156,6 +156,8 @@
     <ClInclude Include="Objects\MemberData.h" />
     <ClInclude Include="Misc.h" />
     <ClInclude Include="Objects\BSPacket.h" />
+    <ClInclude Include="Objects\Pool.h" />
+    <ClInclude Include="Objects\PoolReference.h" />
     <ClInclude Include="Objects\RuntimeException.h" />
     <ClInclude Include="Scratch\CDictionary.h" />
     <ClInclude Include="Scratch\CFileStream.h" />
@@ -172,6 +174,7 @@
     <ClInclude Include="Userdatas\BSUDInterop.h" />
     <ClInclude Include="Userdatas\BSUDInteropMethod.h" />
     <ClInclude Include="Userdatas\BSUDIO.h" />
+    <ClInclude Include="Userdatas\BSUDIterator.h" />
     <ClInclude Include="Userdatas\BSUDPacket.h" />
     <ClInclude Include="Userdatas\BSUDRawData.h" />
     <ClInclude Include="Userdatas\BSUDSocket.h" />
@@ -199,6 +202,8 @@
     <ClCompile Include="Libaries\BSLibMath.cpp" />
     <ClCompile Include="Objects\MemberData.cpp" />
     <ClCompile Include="Objects\BSPacket.cpp" />
+    <ClCompile Include="Objects\Pool.cpp" />
+    <ClCompile Include="Objects\PoolReference.cpp" />
     <ClCompile Include="Objects\RuntimeException.cpp" />
     <ClCompile Include="Scratch\CDictionary.cpp" />
     <ClCompile Include="Scratch\CFileStream.cpp" />
@@ -213,6 +218,7 @@
     <ClCompile Include="Userdatas\BSUDInterop.cpp" />
     <ClCompile Include="Userdatas\BSUDInteropMethod.cpp" />
     <ClCompile Include="Userdatas\BSUDIO.cpp" />
+    <ClCompile Include="Userdatas\BSUDIterator.cpp" />
     <ClCompile Include="Userdatas\BSUDPacket.cpp" />
     <ClCompile Include="Userdatas\BSUDRawData.cpp" />
     <ClCompile Include="Userdatas\BSUDSocket.cpp" />

@@ -50,6 +50,11 @@ namespace BromScript {
 		this->Buffer[this->Count++] = value ? 1 : 0;
 	}
 
+	void ByteWriter::WriteOperator(Operators value) {
+		this->CheckSpace(1);
+		this->Buffer[this->Count++] = (byte)value;
+	}
+
 	void ByteWriter::WriteByte(byte value) {
 		this->CheckSpace(1);
 		this->Buffer[this->Count++] = value;

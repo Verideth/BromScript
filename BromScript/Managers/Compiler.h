@@ -40,14 +40,13 @@ namespace BromScript {
 	public:
 		Scratch::CString Name;
 		int Offset;
-		int ScopeDept;
 		int Line;
 
 		int ScopeStart;
 		int ScopeEnd;
 
 		CompilerLabelData() {}
-		CompilerLabelData(Scratch::CString name, int offset, int dept, int line) : ScopeStart(-1), ScopeEnd(-1), Line(line), Name(name), Offset(offset), ScopeDept(dept) {}
+		CompilerLabelData(Scratch::CString name, int offset, int line) : ScopeStart(-1), ScopeEnd(-1), Line(line), Name(name), Offset(offset) {}
 	};
 
 	class Compiler {
@@ -67,6 +66,7 @@ namespace BromScript {
 		List<CompilerLocalData>& Locals;
 		List<CompilerLabelData>& Gotos;
 		List<CompilerException>& Warnings;
+		List<Scratch::CString>& LoopLabels;
 		Scratch::CDictionary<Scratch::CString, CompilerLabelData>& Labels;
 
 		Scratch::CDictionary<Scratch::CString, Scratch::CString> Defines;
@@ -79,6 +79,7 @@ namespace BromScript {
 		Scratch::CString* ReadLine();
 		Scratch::CString Unescape(Scratch::CString str);
 
+		Scratch::CString GetUniqueLabelName();
 		int SkipIfBlock();
 		int DoProcess();
 		void DoDefines();
@@ -99,6 +100,13 @@ namespace BromScript {
 		void ThrowError(Scratch::CString reason);
 		void ThrowWarning(Scratch::CString reason);
 
+		void _WriteArgumentData(List<Scratch::CString>& args, int& i);
+		void WriteArgumentData(Scratch::CString line);
+		void WriteCall(Scratch::CString line);
+		void WriteCallThis(Scratch::CString line);
+		void WriteGet(Scratch::CString line);
+		void WriteSet(Scratch::CString line);
+
 		void WriteFunction(Scratch::CString line);
 		void WriteClass(Scratch::CString line);
 		void WriteIf(Scratch::CString line);
@@ -108,13 +116,13 @@ namespace BromScript {
 		void WriteSetVar(Scratch::CString line);
 		void WriteReturn(Scratch::CString line);
 		void WriteDelete(Scratch::CString line);
-		void WriteMisc(Scratch::CString line);
-		void WriteLoop(Scratch::CString line);
 		void WriteLabel(Scratch::CString line);
-		void WriteGoto(Scratch::CString line);
-		void WriteRewind(Scratch::CString line);
+		void WriteJump(Scratch::CString line);
+		void WriteJumpNT(Scratch::CString line);
+		void WriteBreak(Scratch::CString line);
+		void WriteContinue(Scratch::CString line);
 
-		Compiler(Scratch::CString filename, const char* chunk, int chunklen, bool addcurline, List<CompilerLocalData>& locals, Scratch::CDictionary<Scratch::CString, CompilerLabelData>& labels, List<CompilerLabelData>& gotos, List<CompilerException>& warnings, Compiler* parent);
+		Compiler(Scratch::CString filename, const char* chunk, int chunklen, bool addcurline, List<CompilerLocalData>& locals, Scratch::CDictionary<Scratch::CString, CompilerLabelData>& labels, List<CompilerLabelData>& gotos, List<CompilerException>& warnings, Compiler* parent, List<Scratch::CString>& looplabels);
 		~Compiler(void);
 
 		byte* Run(int* outbytecodelength, List<Scratch::CString*>* strtbl);
