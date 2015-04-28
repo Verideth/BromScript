@@ -326,6 +326,7 @@ namespace BromScript {
 					return data->BromScript->GetDefaultVarNull();
 				}
 
+				// our special case
 				default:
 					if (b > Operators::Arithmetic_START && b < Operators::Arithmetic_END) {
 						Variable* right = data->PopStack();

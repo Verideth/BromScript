@@ -177,6 +177,12 @@
     <ClInclude Include="Objects\PoolReference.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Objects\PoolLink.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Objects\PoolTyped.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Scratch\CDictionary.cpp">
@@ -303,6 +309,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Objects\PoolReference.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\PoolLink.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Objects\PoolTyped.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

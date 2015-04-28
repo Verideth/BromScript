@@ -112,22 +112,21 @@ namespace BromScript {
 	}
 
 	void Instance::EnterStack(Function* func) {
-		CallStack* cs = new CallStack();
+		CallStack* cs = &this->CurrentStack[this->CurrentStackIndex];
 		cs->Func = func;
 		cs->Name = func->Name;
 		cs->LineNumber = func->CurrentSourceFileLine;
 		cs->Filename = func->Filename;
 
-		this->CurrentStack.Add(cs);
 		this->CurrentStackIndex++;
 	}
 
 	void Instance::LeaveStack() {
 		this->CurrentStackIndex--;
-		delete this->CurrentStack.RemoveAt(this->CurrentStackIndex);
-
-		if (this->CurrentStackIndex == 0)
+		
+		if (this->CurrentStackIndex == 0) {
 			this->KillScriptThreaded = false;
+		}
 	}
 
 	int Instance::GetCurrentStackSize() {
@@ -306,13 +305,13 @@ namespace BromScript {
 
 	Function* Instance::GetCurrentFunction() {
 		if (this->CurrentStackIndex == 0) return null;
-		return this->CurrentStack[this->CurrentStackIndex - 1]->Func;
+		return this->CurrentStack[this->CurrentStackIndex - 1].Func;
 	}
 
 	CallStack* Instance::GetCurrentStack() {
 		CallStack* stack = new CallStack[this->CurrentStackIndex];
 		for (int i = 0; i < this->CurrentStackIndex; i++)
-			stack[i] = *this->CurrentStack[i];
+			stack[i] = this->CurrentStack[i];
 
 		return stack;
 	}
@@ -325,7 +324,7 @@ namespace BromScript {
 		CallStack* stack = new CallStack[this->CurrentStackIndex];
 		int lastiserror = false;
 		for (int i = 0; i < this->CurrentStackIndex; i++) {
-			CallStack* s = this->CurrentStack[i];
+			CallStack* s = &this->CurrentStack[i];
 
 			s->Func->ForceReturn = true;
 			s->LineNumber = s->Func->CurrentSourceFileLine;
@@ -347,19 +346,15 @@ namespace BromScript {
 			if (i + 1 == this->CurrentStackIndex && s->Name == "error") {
 				lastiserror = true;
 			}
-
-			stack[i] = *s;
 		}
 
 		if (this->Debug->Connected) {
-			this->Debug->Error(stack, this->CurrentStackIndex, msg);
+			this->Debug->Error(this->CurrentStack, this->CurrentStackIndex, msg);
 		}
 
 		if (this->ErrorCallback != null) {
-			this->ErrorCallback(this, stack, this->CurrentStackIndex - (lastiserror ? 1 : 0), msg);
+			this->ErrorCallback(this, this->CurrentStack, this->CurrentStackIndex - (lastiserror ? 1 : 0), msg);
 		}
-
-		delete[] stack;
 
 		//throw RuntimeException(msg);
 	}

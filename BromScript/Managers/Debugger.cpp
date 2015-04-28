@@ -342,9 +342,10 @@ namespace BromScript {
 		ErrorFunction olderrfunc = this->BSI->GetErrorCallback();
 		this->BSI->SetErrorCallback(errOverride);
 
-		bool* oldreturns = new bool[this->BSI->CurrentStack.Count];
-		for (int i = 0; i < this->BSI->CurrentStack.Count; i++) {
-			oldreturns[i] = this->BSI->CurrentStack[i]->Func->ForceReturn;
+		int stacksize = this->BSI->GetCurrentStackSize();
+		bool* oldreturns = new bool[stacksize];
+		for (int i = 0; i < stacksize; i++) {
+			oldreturns[i] = this->BSI->CurrentStack[i].Func->ForceReturn;
 		}
 
 		if (func == null) {
@@ -364,8 +365,8 @@ namespace BromScript {
 			tmp.StringTable = null;
 		}
 
-		for (int i = 0; i < this->BSI->CurrentStack.Count; i++) {
-			this->BSI->CurrentStack[i]->Func->ForceReturn = oldreturns[i];
+		for (int i = 0; i < stacksize; i++) {
+			this->BSI->CurrentStack[i].Func->ForceReturn = oldreturns[i];
 		}
 
 		this->BSI->SetErrorCallback(olderrfunc);

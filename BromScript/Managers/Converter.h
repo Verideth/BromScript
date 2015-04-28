@@ -43,6 +43,7 @@ namespace BromScript{
 		static bool SetMember(Instance* bromscript, Variable* member, Variable* value, Scratch::CString key);
 		static Variable* MemberToVariable(Instance* bromscript, Variable* member);
 
+		static void* NumberToPointer(Instance* bromscript, double val);
 		inline static void* NumberToPointer(double val) { return new double(val); }
 		inline static void* BoolToPointer(bool val) { return (void*)(val ? 1 : 0); }
 		inline static void* StringToPointer(Scratch::CString val) { return new Scratch::CString(val); }

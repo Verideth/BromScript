@@ -21,9 +21,6 @@
 using namespace Scratch;
 
 namespace BromScript {
-	CallStack::CallStack(void) :LineNumber(0), Func(null) {
-	}
-
-	CallStack::~CallStack(void) {
-	}
+	CallStack::CallStack() :LineNumber(0), Func(null) { }
+	CallStack::~CallStack() { }
 }

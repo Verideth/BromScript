@@ -38,9 +38,9 @@ namespace BromScript {
 		Instance();
 		~Instance();
 
+		CallStack CurrentStack[BS_CALLSTACK_SIZE];
 		Scratch::CString CurrentIncludePath;
 		Table* Globals;
-		List<CallStack*> CurrentStack;
 		List<Userdata*> RegisteredUserdataTypes;
 		bool KillScriptThreaded;
 

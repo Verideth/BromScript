@@ -157,7 +157,9 @@
     <ClInclude Include="Misc.h" />
     <ClInclude Include="Objects\BSPacket.h" />
     <ClInclude Include="Objects\Pool.h" />
+    <ClInclude Include="Objects\PoolLink.h" />
     <ClInclude Include="Objects\PoolReference.h" />
+    <ClInclude Include="Objects\PoolTyped.h" />
     <ClInclude Include="Objects\RuntimeException.h" />
     <ClInclude Include="Scratch\CDictionary.h" />
     <ClInclude Include="Scratch\CFileStream.h" />
@@ -203,7 +205,9 @@
     <ClCompile Include="Objects\MemberData.cpp" />
     <ClCompile Include="Objects\BSPacket.cpp" />
     <ClCompile Include="Objects\Pool.cpp" />
+    <ClCompile Include="Objects\PoolLink.cpp" />
     <ClCompile Include="Objects\PoolReference.cpp" />
+    <ClCompile Include="Objects\PoolTyped.cpp" />
     <ClCompile Include="Objects\RuntimeException.cpp" />
     <ClCompile Include="Scratch\CDictionary.cpp" />
     <ClCompile Include="Scratch\CFileStream.cpp" />

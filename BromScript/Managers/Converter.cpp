@@ -84,33 +84,44 @@ namespace BromScript{
 				var->Type = VariableType::Bool;
 				break;
 			case MemberType::Double:
-				var->Value = Converter::NumberToPointer(*(double*)udi->Ptr);
+				var->Value = Converter::NumberToPointer(bromscript, *(double*)udi->Ptr);
 				var->Type = VariableType::Number;
 				break;
 			case MemberType::Byte:
-				var->Value = Converter::NumberToPointer((double)*(byte*)udi->Ptr);
+				var->Value = Converter::NumberToPointer(bromscript, (double)*(byte*)udi->Ptr);
 				var->Type = VariableType::Number;
 				break;
 			case MemberType::Int:
-				var->Value = Converter::NumberToPointer((double)*(int*)udi->Ptr);
+				var->Value = Converter::NumberToPointer(bromscript, (double)*(int*)udi->Ptr);
 				var->Type = VariableType::Number;
 				break;
 			case MemberType::Short:
-				var->Value = Converter::NumberToPointer((double)*(short*)udi->Ptr);
+				var->Value = Converter::NumberToPointer(bromscript, (double)*(short*)udi->Ptr);
 				var->Type = VariableType::Number;
 				break;
 			case MemberType::Float:
-				var->Value = Converter::NumberToPointer((double)*(float*)udi->Ptr);
+				var->Value = Converter::NumberToPointer(bromscript, (double)*(float*)udi->Ptr);
 				var->Type = VariableType::Number;
 				break;
 			case MemberType::Long:
-				var->Value = Converter::NumberToPointer((double)*(long long*)udi->Ptr);
+				var->Value = Converter::NumberToPointer(bromscript, (double)*(long long*)udi->Ptr);
 				var->Type = VariableType::Number;
 				break;
 		}
 
 		return var;
 	}
+
+	void* Converter::NumberToPointer(Instance* bromscript, double val) {
+		double* ret = bromscript->GC.NumberPool.GetNext();
+		if (ret == null) {
+			*ret = val;
+			return ret;
+		}
+		
+		return new double(val);
+	}
+
 
 	Variable* Converter::ToVariable(Instance* bromscript, const char* key, BSFunction value) {
 		return Converter::ToVariable(bromscript, CString(key), value);
@@ -140,28 +151,28 @@ namespace BromScript{
 	Variable* Converter::ToVariable(Instance* bromscript, double value) {
 		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Number;
-		ret->Value = Converter::NumberToPointer(value);
+		ret->Value = Converter::NumberToPointer(bromscript, value);
 		return ret;
 	}
 
 	Variable* Converter::ToVariable(Instance* bromscript, float value) {
 		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Number;
-		ret->Value = Converter::NumberToPointer(value);
+		ret->Value = Converter::NumberToPointer(bromscript, value);
 		return ret;
 	}
 
 	Variable* Converter::ToVariable(Instance* bromscript, int value) {
 		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Number;
-		ret->Value = Converter::NumberToPointer(value);
+		ret->Value = Converter::NumberToPointer(bromscript, value);
 		return ret;
 	}
 
 	Variable* Converter::ToVariable(Instance* bromscript, long long value) {
 		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Number;
-		ret->Value = Converter::NumberToPointer((double)value);
+		ret->Value = Converter::NumberToPointer(bromscript, (double)value);
 		return ret;
 	}
 

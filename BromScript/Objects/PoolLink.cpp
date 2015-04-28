@@ -16,25 +16,8 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	*/
 
-#ifndef BROMSCRIPT_POOL_INCLUDED
-#define BROMSCRIPT_POOL_INCLUDED
-
-#include "../Objects/Variable.h"
 #include "PoolLink.h"
 
 namespace BromScript{
-	class Pool {
-	public:
-		PoolLink* NextUnusedLink;
-		PoolLink* NextUsedLink;
 
-		Pool(int id);
-		Variable Buffer[BS_POOL_SIZE];
-		PoolLink BufferLinks[BS_POOL_SIZE];
-
-		Variable* GetNext();
-		void Free(Variable* pooledvalue);
-	};
 }
-
-#endif

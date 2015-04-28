@@ -21,6 +21,7 @@
 
 #include "../SIF.h"
 #include "../Objects/Pool.h"
+#include "../Objects/PoolTyped.h"
 #include "../Objects/Variable.h"
 
 namespace BromScript{
@@ -37,6 +38,8 @@ namespace BromScript{
 		void SelfDestruct();
 		Variable* GetPooledVariable();
 		Variable* RegisterVariable(Variable* var);
+
+		PoolTyped<double> NumberPool;
 	private:
 		int FrameSkip;
 		Pool** Pools;

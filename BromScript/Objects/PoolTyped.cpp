@@ -16,22 +16,20 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	*/
 
-#include "Pool.h"
+
+#ifndef BROMSCRIPT_POOL_TYPED_CPP_INCLUDED
+#define BROMSCRIPT_POOL_TYPED_CPP_INCLUDED
+
+#include "PoolTyped.h"
 #include "PoolReference.h"
 
-using namespace Scratch;
 
 namespace BromScript{
-	Pool::Pool(int id) {
-		for (int i = 0; i < BS_POOL_SIZE; i++) {
-			this->Buffer[i].PoolRef.ID = id;
-			this->Buffer[i].PoolRef.Index = i;
-		}
-
+	template<class Type>
+	PoolTyped<Type>::PoolTyped() {
 		// links
 		for (int i = 0; i < BS_POOL_SIZE; i++) {
-			this->BufferLinks[i].Data = &this->Buffer[i];
-			//this->BufferLinks[i].PrevLink = i > 0 ? &this->BufferLinks[i - 1] : null;
+			this->BufferLinks[i].Data = new Type();
 			this->BufferLinks[i].NextLink = i + 1 < BS_POOL_SIZE ? &this->BufferLinks[i + 1] : null;
 		}
 
@@ -39,10 +37,11 @@ namespace BromScript{
 		this->NextUsedLink = null;
 	}
 
-	Variable* Pool::GetNext() {
+	template<class Type>
+	Type* PoolTyped<Type>::GetNext() {
+		if (this->NextUnusedLink == null) return null;
 		PoolLink* curlink = this->NextUnusedLink;
-		Variable* ret = (Variable*)curlink->Data;
-		if (ret == null) return null;
+		Type* ret = (Type*)curlink->Data;
 
 		this->NextUnusedLink = curlink->NextLink;
 
@@ -53,9 +52,12 @@ namespace BromScript{
 		return ret;
 	}
 
-	void Pool::Free(Variable* pooledvalue) {
+	template<class Type>
+	void PoolTyped<Type>::Free(Type* val) {
 		if (this->NextUsedLink == null) {
-			throw "At some point, a object has been freed which was NOT from this pool, and this is just one of the sideeffects";
+			// we cached enough objects, delete it, and on in with our lives
+			delete val;
+			return;
 		}
 
 		PoolLink* tmp = this->NextUsedLink->NextLink;
@@ -63,6 +65,8 @@ namespace BromScript{
 		this->NextUnusedLink = this->NextUsedLink;
 		this->NextUsedLink = tmp;
 
-		this->NextUnusedLink->Data = pooledvalue;
+		this->NextUnusedLink->Data = val;
 	}
 }
+
+#endif

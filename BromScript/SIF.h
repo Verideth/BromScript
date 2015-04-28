@@ -28,6 +28,8 @@
 
 // bytecode version, should only be changed when binary format changes
 #define BROMSCRIPT_CURRENTVERSION 4
+#define BS_POOL_SIZE 4098
+#define BS_CALLSTACK_SIZE 1024
 
 //////////////////////////////////////////////////
 

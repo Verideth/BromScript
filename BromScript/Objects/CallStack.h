@@ -20,13 +20,12 @@
 #define BROMSCRIPT_CALLSTACK_INCLUDED
 
 #include "../SIF.h"
-#include "../Objects/Function.h"
 
 namespace BromScript {
 	class CallStack {
 	public:
-		CallStack(void);
-		~CallStack(void);
+		CallStack();
+		~CallStack();
 
 		Scratch::CString Filename;
 		Scratch::CString Name;

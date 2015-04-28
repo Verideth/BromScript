@@ -18,7 +18,6 @@
 
 #include "../Managers/GarbageCollector.h"
 #include "../Objects/ArgumentData.h"
-#include "../Objects/Pool.h"
 
 using namespace Scratch;
 
@@ -113,6 +112,12 @@ namespace BromScript{
 				if (var != null && var->GetRefCount() == 0) {
 					curc++;
 
+					// number pooling, whooo
+					if (var->Type == VariableType::Number) {
+						this->NumberPool.Free((double*)var->Value);
+						var->Value = null;
+					}
+
 					if (var->PoolRef.ID == -1) {
 						delete var;
 					} else {
@@ -143,6 +148,12 @@ namespace BromScript{
 			Variable* var = this->Buffer[i];
 
 			if (var != null && var->GetRefCount() == 0) {
+				// number pooling, whooo
+				if (var->Type == VariableType::Number) {
+					this->NumberPool.Free((double*)var->Value);
+					var->Value = null;
+				}
+
 				if (var->PoolRef.ID == -1) {
 					delete var;
 				} else {
