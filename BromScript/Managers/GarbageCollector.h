@@ -40,6 +40,7 @@ namespace BromScript{
 		Variable* RegisterVariable(Variable* var);
 
 		PoolTyped<double> NumberPool;
+		PoolTyped<ArgumentData> ArgumentsPool;
 	private:
 		int FrameSkip;
 		Pool** Pools;

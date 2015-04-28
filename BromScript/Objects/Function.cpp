@@ -136,7 +136,7 @@ namespace BromScript {
 	}
 
 
-	Variable* Function::GetVar(CString key) {
+	Variable* Function::GetVar(CString& key) {
 		if (key == "this" && this->CurrentThisObject != null)
 			return this->CurrentThisObject;
 
@@ -245,6 +245,8 @@ namespace BromScript {
 		ExecuteData* data = new ExecuteData();
 		data->BromScript = this->BromScript;
 		data->Reader = new ByteReader();
+		data->Reader->Code = this->Code;
+		data->Reader->StringTable = this->StringTable;
 		data->Reader->Pos = this->CodeOffset;
 		data->Reader->Func = this;
 		data->Function = this;

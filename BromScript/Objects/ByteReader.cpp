@@ -27,58 +27,6 @@ namespace BromScript {
 	ByteReader::~ByteReader(void) {
 	}
 
-	byte ByteReader::ReadByte() {
-		return this->Func->Code[this->Pos++];
-	}
-
-	byte* ByteReader::ReadBytes(int len) {
-		byte* ret = new byte[len];
-		memcpy(ret, this->Func->Code + this->Pos, len);
-		this->Pos += len;
-
-		return ret;
-	}
-
-	bool ByteReader::ReadBool() {
-		return this->Func->Code[this->Pos++] == 1;
-	}
-
-	float ByteReader::ReadFloat() {
-		float num = 0;
-		memcpy(&num, this->Func->Code + this->Pos, 4);
-		this->Pos += 4;
-
-		return num;
-	}
-
-	double ByteReader::ReadDouble() {
-		double num = 0;
-		memcpy(&num, this->Func->Code + this->Pos, 8);
-		this->Pos += 8;
-
-		return num;
-	}
-
-	short ByteReader::ReadShort() {
-		short num = 0;
-		memcpy(&num, this->Func->Code + this->Pos, 2);
-
-		this->Pos += 2;
-		return num;
-	}
-
-	int ByteReader::ReadInt() {
-		int num = 0;
-		memcpy(&num, this->Func->Code + this->Pos, 4);
-
-		this->Pos += 4;
-		return num;
-	}
-
-	CString& ByteReader::ReadString() {
-		return this->Func->StringTable[this->ReadShort()];
-	}
-
 	List<CString>* ByteReader::ReadStrings() {
 		List<CString>* arr = new List<CString>();
 

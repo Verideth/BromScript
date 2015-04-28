@@ -370,6 +370,7 @@ namespace BromScript {
 		}
 
 		data->Reader->Pos = oldpos;
+		data->Reader->StringTable = data->Function->StringTable; // we need to reset this due we create if above
 	}
 
 	void Executer::GlobalLocals(ExecuteData* data) {
@@ -574,61 +575,93 @@ namespace BromScript {
 	}
 
 	void Executer::Call(ExecuteData* data) {
-		ArgumentData args;
-		args.Caller = data->Function;
-		args.BromScript = data->BromScript;
+		ArgumentData* args = data->BromScript->GC.ArgumentsPool.GetNext();
+		if (args == null) args = new ArgumentData();
+
+
+		args->BromScript = data->BromScript;
+		args->Caller = data->Function;
+		args->BromScript = data->BromScript;
 
 		int argcount = data->Reader->ReadInt();
 		for (int i = 0; i < argcount; i++) {
-			args.AddVariable(data->PopStack());
+			args->AddVariable(data->PopStack());
 		}
 
 		Variable* var = data->PopStack();
 		if (var->Type == VariableType::Function) {
-			data->PushStack(var->GetFunction()->Run(&args));
-			args.Clear();
-			return;
-		}
+			data->PushStack(var->GetFunction()->Run(args));
 
-		BS_THROW_ERROR(data->BromScript, CString::Format("Cannot call %s", Converter::TypeToString(data->BromScript, var->Type).str_szBuffer).str_szBuffer);
-	}
-
-	void Executer::CallThis(ExecuteData* data) {
-		ArgumentData args;
-		args.BromScript = data->BromScript;
-
-		int argcount = data->Reader->ReadInt();
-		for (int i = 0; i < argcount; i++) {
-			args.AddVariable(data->PopStack());
-		}
-
-		Variable* var = data->PopStack();
-		Variable* thisvar = data->PopStack();
-		args.Caller = data->Function;
-		args.SetThisObject(thisvar);
-
-		if (var->Type == VariableType::Function) {
-			data->PushStack(var->GetFunction()->Run(&args, thisvar));
-			args.Clear();
+			args->Clear();
+			data->BromScript->GC.ArgumentsPool.Free(args);
 			return;
 		}
 
 		if (var->Type > VariableType::Userdata) {
 			UserdataInstance* udi = (UserdataInstance*)var->Value;
 			if (udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticCall)] != null) {
-				Variable* ret = udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticCall)](data->BromScript, &args);
-				args.Clear();
+				Variable* ret = udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticCall)](data->BromScript, args);
+				args->Clear();
 
 				if (ret == null) ret = data->BromScript->GetDefaultVarNull();
 				else data->BromScript->GC.RegisterVariable(ret);
 
 				data->PushStack(ret);
+
+				args->Clear();
+				data->BromScript->GC.ArgumentsPool.Free(args);
 				return;
 			}
 		}
 
-		args.Clear();
+		args->Clear();
+		data->BromScript->GC.ArgumentsPool.Free(args);
+		BS_THROW_ERROR(data->BromScript, CString::Format("Cannot call %s", Converter::TypeToString(data->BromScript, var->Type).str_szBuffer).str_szBuffer);
+	}
 
+	void Executer::CallThis(ExecuteData* data) {
+		ArgumentData* args = data->BromScript->GC.ArgumentsPool.GetNext();
+		if (args == null) args = new ArgumentData();
+
+		args->BromScript = data->BromScript;
+
+		int argcount = data->Reader->ReadInt();
+		for (int i = 0; i < argcount; i++) {
+			args->AddVariable(data->PopStack());
+		}
+
+		Variable* var = data->PopStack();
+		Variable* thisvar = data->PopStack();
+		args->Caller = data->Function;
+		args->SetThisObject(thisvar);
+
+		if (var->Type == VariableType::Function) {
+			data->PushStack(var->GetFunction()->Run(args, thisvar));
+
+			args->Clear();
+			data->BromScript->GC.ArgumentsPool.Free(args);
+			return;
+		}
+
+		if (var->Type > VariableType::Userdata) {
+			UserdataInstance* udi = (UserdataInstance*)var->Value;
+			if (udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticCall)] != null) {
+				Variable* ret = udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticCall)](data->BromScript, args);
+				args->Clear();
+
+				if (ret == null) ret = data->BromScript->GetDefaultVarNull();
+				else data->BromScript->GC.RegisterVariable(ret);
+
+				data->PushStack(ret);
+
+				args->Clear();
+				data->BromScript->GC.ArgumentsPool.Free(args);
+				return;
+			}
+		}
+
+		args->Clear();
+		data->BromScript->GC.ArgumentsPool.Free(args);
 		BS_THROW_ERROR(data->BromScript, CString::Format("Cannot call %s", Converter::TypeToString(data->BromScript, var->Type).str_szBuffer).str_szBuffer);
 	}
 

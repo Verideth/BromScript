@@ -47,7 +47,7 @@ namespace BromScript {
 
 		void SetVar(Variable* var, int localindex);
 		void SetVar(Scratch::CString key, Variable* var, bool global);
-		Variable* GetVar(Scratch::CString var);
+		Variable* GetVar(Scratch::CString& var);
 
 		Scratch::CString* FixedLocalKeys;
 		Variable** FixedLocalVars;

@@ -34,8 +34,8 @@ namespace BromScript {
 	}
 
 	void ArgumentData::Clear() {
-		for (int i = 0; i < this->Vars.Count; i++) {
-			BS_REF_DECREESE(this->Vars.RemoveAt(i));
+		for (int i = 0; i < this->Count; i++) {
+			BS_REF_DECREESE(this->Vars[i]);
 		}
 
 		this->Count = 0;
@@ -167,26 +167,28 @@ namespace BromScript {
 
 	void ArgumentData::SetVariableData(List<Variable*>* vars) {
 		this->Clear();
-		this->Count = vars->Count;
 
 		for (int i = 0; i < vars->Count; i++){
+			if (this->Count + 1 == BS_ARGUMENT_SIZE) {
+				BS_THROW_ERROR(this->BromScript, "Too much arguments in call");
+				return;
+			}
+
 			Variable* var = vars->Get(i);
 
 			BS_REF_INCREESE(var);
-			this->Vars.Add(var);
+			this->Vars[this->Count++] = var;
 		}
 	}
 
-	void ArgumentData::InsertVariable(int pos, Variable* var) {
-		this->Count++;
-		BS_REF_INCREESE(var);
-		this->Vars.Insert(pos, var);
-	}
-
 	void ArgumentData::AddVariable(Variable* var) {
-		this->Count++;
+		if (this->Count + 1 == BS_ARGUMENT_SIZE) {
+			BS_THROW_ERROR(this->BromScript, "Too much arguments in call");
+			return;
+		}
+
 		BS_REF_INCREESE(var);
-		this->Vars.Add(var);
+		this->Vars[this->Count++] = var;
 	}
 
 	void ArgumentData::Error(Scratch::CString msg, int linenumber, const char* file) {

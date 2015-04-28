@@ -23,13 +23,16 @@
 // config
 
 // uncomment if you want to enable reference debugging, use the BS_REF_INCREESE and BS_REF_DECREESE macros for that.
-// this is VERY slow.
+// this is VERY slow, but VERY useful in debugging reference counts in your own code
+// it will add a List<CString> to the variable object containing details about the file and linenumber where a var
+// is ref'd and unref'd
 // #define BS_DEBUG_REFCOUNT
 
 // bytecode version, should only be changed when binary format changes
 #define BROMSCRIPT_CURRENTVERSION 4
-#define BS_POOL_SIZE 4098
-#define BS_CALLSTACK_SIZE 1024
+#define BS_POOL_SIZE 4098 // max pool size of variables
+#define BS_CALLSTACK_SIZE 1024 // max callstack size
+#define BS_ARGUMENT_SIZE 64 // max arguments for function calls
 
 //////////////////////////////////////////////////
 

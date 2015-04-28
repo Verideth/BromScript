@@ -28,14 +28,53 @@ namespace BromScript {
 		ByteReader(void);
 		~ByteReader(void);
 
-		byte ReadByte();
-		byte* ReadBytes(int len);
-		short ReadShort();
-		int ReadInt();
-		float ReadFloat();
-		double ReadDouble();
-		bool ReadBool();
-		Scratch::CString& ReadString();
+		Scratch::CString* StringTable;
+		unsigned char* Code;
+
+		inline unsigned char ByteReader::ReadByte() {
+			return this->Code[this->Pos++];
+		}
+
+		inline unsigned char* ByteReader::ReadBytes(int len) {
+			unsigned char* ret = new unsigned char[len];
+			memcpy(ret, this->Code + this->Pos, len);
+			this->Pos += len;
+
+			return ret;
+		}
+
+		inline bool ByteReader::ReadBool() {
+			return this->Code[this->Pos++] == 1;
+		}
+
+		inline double ByteReader::ReadDouble() {
+			double num = 0;
+			memcpy(&num, this->Code + this->Pos, 8);
+			this->Pos += 8;
+
+			return num;
+		}
+
+		inline short ByteReader::ReadShort() {
+			short num = 0;
+			memcpy(&num, this->Code + this->Pos, 2);
+
+			this->Pos += 2;
+			return num;
+		}
+
+		inline int ByteReader::ReadInt() {
+			int num = 0;
+			memcpy(&num, this->Code + this->Pos, 4);
+
+			this->Pos += 4;
+			return num;
+		}
+
+		inline Scratch::CString& ByteReader::ReadString() {
+			return this->StringTable[this->ReadShort()];
+		}
+
 		List<Scratch::CString>* ReadStrings();
 
 		int Pos;

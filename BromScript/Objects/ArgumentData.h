@@ -25,6 +25,7 @@
 #include "../Objects/Table.h"
 #include "List.h"
 #include "../Managers/Converter.h"
+#include "../SIF.h"
 
 namespace BromScript {
 	class ArgumentData {
@@ -39,7 +40,6 @@ namespace BromScript {
 		Function* Caller;
 
 		void SetVariableData(List<Variable*>* vars);
-		void InsertVariable(int index, Variable* var);
 		void AddVariable(Variable* var);
 
 		void Error(Scratch::CString msg);
@@ -70,7 +70,7 @@ namespace BromScript {
 		void* GetThisObjectData();
 
 	private:
-		List<Variable*> Vars;
+		Variable* Vars[BS_ARGUMENT_SIZE];
 	};
 }
 
