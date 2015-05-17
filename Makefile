@@ -1,5 +1,5 @@
 INCLUDES		= -IBromScript/
-LIBS			= -Lbin/ -lm -L/usr/lib64 -lstdc++ -lpthread -ldl
+LIBS			= -Lbin -lm -L/usr/lib64 -lstdc++ -lpthread -ldl
 OPTIMIZEFLAG	= -O0
 CXXFLAGS		= -fpermissive -w -fPIC
 
