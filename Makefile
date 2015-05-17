@@ -18,6 +18,8 @@ all: bin/libBromScript.so bin/bsexec
 bin/libBromScript.so: $(objfiles_bromscript)
 	mkdir -p bin lib
 	$(CXX) -g -ggdb -std=c++11 $(OPTIMIZEFLAG) $(CXXFLAGS) $(INCLUDES) -shared -o bin/libBromScript.so $(objfiles_bromscript) $(LIBS)
+
+install:
 	cp bin/libBromScript.so /lib
 
 #bin/libBromScript.a: $(objfiles_bromscript)
