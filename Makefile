@@ -15,6 +15,7 @@ all: bin/libBromScript.so bin/bsexec
 #bin/libBromScript.a
 
 bin/libBromScript.so: $(objfiles_bromscript)
+	mkdir -p bin lib
 	$(CXX) -g -ggdb -std=c++11 $(OPTIMIZEFLAG) $(INCLUDES) -shared -o bin/libBromScript.so $(objfiles_bromscript) $(LIBS)
 	cp bin/libBromScript.so /lib
 
@@ -30,6 +31,7 @@ bin/bsexec: $(objfiles_bsexec)
 .PHONY: clean all release
 clean:
 	rm -f $(shell find . -name "*.o") bin/libBromScript.so bin/bsexec
+	rm -r bin lib
 	
 release_set_flag:
 	$(eval OPTIMIZEFLAG=-O3)
