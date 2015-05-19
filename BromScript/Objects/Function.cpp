@@ -22,7 +22,7 @@
 using namespace Scratch;
 
 namespace BromScript {
-	Function::Function(Instance* bs) : StringTableCount(0), StringTableVars(null), FixedLocalIsRef(null), CodeReferenceFunc(null), CurrentSourceFileLine(-1), CodeOffset(0), FixedLocalsCount(0), CodeLength(0), Code(null), ForceReturn(false), FixedLocalVars(null), FixedLocalKeys(null), IsCpp(false), Parent(null), BromScript(bs), CppFunc(null), CurrentThisObject(null), StringTable(null) {
+	Function::Function(Instance* bs) : StringTableCount(0), StringTableVars(null), FixedLocalTypes(null), FixedLocalIsRef(null), CodeReferenceFunc(null), CurrentSourceFileLine(-1), CodeOffset(0), FixedLocalsCount(0), CodeLength(0), Code(null), ForceReturn(false), FixedLocalVars(null), FixedLocalKeys(null), IsCpp(false), Parent(null), BromScript(bs), CppFunc(null), CurrentThisObject(null), StringTable(null) {
 	}
 
 	Function::~Function() {
@@ -67,9 +67,10 @@ namespace BromScript {
 
 			delete[] this->FixedLocalVars;
 		}
-		if (this->FixedLocalIsRef != null) delete[] this->FixedLocalIsRef;
+		
 		if (this->FixedLocalKeys != null) delete[] this->FixedLocalKeys;
-
+		if (this->FixedLocalIsRef != null) delete[] this->FixedLocalIsRef;
+		if (this->FixedLocalTypes != null) delete[] this->FixedLocalTypes;
 		if (this->Code != null) delete[] this->Code;
 	}
 
@@ -238,7 +239,14 @@ namespace BromScript {
 
 		for (int i = 0; i < args->Count && i < this->Parameters.Count; i++) {
 			Variable* var = args->GetVariable(i);
-			
+
+			if (this->FixedLocalTypes[i] != -1) {
+				if (var->Type != this->FixedLocalTypes[i]) {
+					BS_THROW_ERROR(this->BromScript, CString::Format("Expected type %s at argument %d, but got %s", Converter::TypeToString(this->BromScript, (VariableType::Enum)this->FixedLocalTypes[i]), i + 1, Converter::TypeToString(this->BromScript, var->Type)).str_szBuffer);
+					return this->BromScript->GetDefaultVarNull();
+				}
+			}
+
 			if (this->FixedLocalIsRef != null && !this->FixedLocalIsRef[i] && (var->Type == VariableType::Number || var->Type == VariableType::String)) {
 				Variable* nvar = this->BromScript->GC.GetPooledVariable();
 				nvar->Type = var->Type;

@@ -721,7 +721,7 @@ namespace BromScript {
 		CString filename = data->Reader->ReadString();
 
 		Function* func = new Function(data->BromScript);
-		func->Name = "AnonFunction";
+		func->Name = "Function";
 		func->Filename = filename;
 		func->Parent = data->Function;
 
@@ -738,13 +738,13 @@ namespace BromScript {
 		func->FixedLocalsCount = localscount;
 		func->FixedLocalVars = new Variable*[localscount];
 		func->FixedLocalKeys = new CString[localscount];
+		func->FixedLocalTypes = new int[localscount];
 		func->FixedLocalIsRef = new bool[localscount];
+
 		for (int i = 0; i < localscount; i++) {
 			func->FixedLocalKeys[i] = data->Reader->ReadString();
 			func->FixedLocalIsRef[i] = data->Reader->ReadByte() == 1;
-
-			// TODO: make type checking
-			data->Reader->ReadInt(); // we don't care about the type, we're dynamic maaaaan, whooooooo =)
+			func->FixedLocalTypes[i] = data->Reader->ReadInt();
 			func->FixedLocalVars[i] = null;
 		}
 
