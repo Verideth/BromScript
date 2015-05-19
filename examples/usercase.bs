@@ -148,4 +148,16 @@ local enumtest = enum {
 }
 if (enumtest.one != 1) error("Enum wrong")
 
+function reftest(number &num, number num2) {
+	num++
+	num2++
+}
+
+local number a = 0
+local number b = 0
+reftest(a, b)
+print(a, b)
+if (a == 0) error("Function param by reference invalid")
+if (b == 1) error("Function param by value invalid")
+
 print("All tests passed!")

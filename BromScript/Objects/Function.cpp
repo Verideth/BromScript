@@ -22,7 +22,7 @@
 using namespace Scratch;
 
 namespace BromScript {
-	Function::Function(Instance* bs) : StringTableCount(0), StringTableVars(null), CodeReferenceFunc(null), CurrentSourceFileLine(-1), CodeOffset(0), FixedLocalsCount(0), CodeLength(0), Code(null), ForceReturn(false), FixedLocalVars(null), FixedLocalKeys(null), IsCpp(false), Parent(null), BromScript(bs), CppFunc(null), CurrentThisObject(null), StringTable(null) {
+	Function::Function(Instance* bs) : StringTableCount(0), StringTableVars(null), FixedLocalIsRef(null), CodeReferenceFunc(null), CurrentSourceFileLine(-1), CodeOffset(0), FixedLocalsCount(0), CodeLength(0), Code(null), ForceReturn(false), FixedLocalVars(null), FixedLocalKeys(null), IsCpp(false), Parent(null), BromScript(bs), CppFunc(null), CurrentThisObject(null), StringTable(null) {
 	}
 
 	Function::~Function() {
@@ -67,7 +67,7 @@ namespace BromScript {
 
 			delete[] this->FixedLocalVars;
 		}
-
+		if (this->FixedLocalIsRef != null) delete[] this->FixedLocalIsRef;
 		if (this->FixedLocalKeys != null) delete[] this->FixedLocalKeys;
 
 		if (this->Code != null) delete[] this->Code;
@@ -237,7 +237,23 @@ namespace BromScript {
 		}
 
 		for (int i = 0; i < args->Count && i < this->Parameters.Count; i++) {
-			this->SetVar(args->GetVariable(i), i);
+			Variable* var = args->GetVariable(i);
+			
+			if (this->FixedLocalIsRef != null && !this->FixedLocalIsRef[i] && (var->Type == VariableType::Number || var->Type == VariableType::String)) {
+				Variable* nvar = this->BromScript->GC.GetPooledVariable();
+				nvar->Type = var->Type;
+
+				if (var->Type == VariableType::Number) {
+					nvar->Value = this->BromScript->GC.NumberPool.GetNext();
+					*(double*)nvar->Value = *(double*)var->Value;
+				} else if (var->Type == VariableType::String){
+					nvar->Value = new CString((CString*)var->Value);
+				}
+
+				var = nvar;
+			}
+
+			this->SetVar(var, i);
 		}
 
 		this->BromScript->GC.RunFrame();

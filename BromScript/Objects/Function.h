@@ -51,6 +51,7 @@ namespace BromScript {
 
 		Scratch::CString* FixedLocalKeys;
 		Variable** FixedLocalVars;
+		bool* FixedLocalIsRef;
 		int FixedLocalsCount;
 
 		Instance* BromScript;

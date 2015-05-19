@@ -92,7 +92,7 @@ namespace BromScript {
 		p.WriteString("Instance_RegisteredUserdataTypes"); p.WriteShort(offsetof(Instance, RegisteredUserdataTypes));
 		p.WriteString("Instance_KillScriptThreaded"); p.WriteShort(offsetof(Instance, KillScriptThreaded));
 		p.WriteString("Instance_GC"); p.WriteShort(offsetof(Instance, GC));
-		p.WriteString("Instance_Debug"); p.WriteShort(offsetof(Instance, Debug));
+		p.WriteString("Instance_Debug"); p.WriteShort((short)offsetof(Instance, Debug));
 
 		p.WriteString("Userdata_CallDTor"); p.WriteShort(offsetof(Userdata, CallDTor));
 		p.WriteString("Userdata_TypeSize"); p.WriteShort(offsetof(Userdata, TypeSize));

@@ -149,9 +149,13 @@ namespace BromScript {
 		int brackets_c = 0;
 		bool inquotes = false;
 
-		int b_a_cs = 0;
-		int b_b_cs = 0;
-		int b_c_cs = 0;
+		int f_a_cs = -1;
+		int f_b_cs = -1;
+		int f_c_cs = -1;
+
+		int b_a_cs = -1;
+		int b_b_cs = -1;
+		int b_c_cs = -1;
 		int q_cs = 0;
 
 		int addline = this->Parent == null ? 1 : 0;
@@ -160,13 +164,13 @@ namespace BromScript {
 			char c = this->CurrentChunk[i];
 
 			switch (c) {
-				case '[': if (brackets_a++ == 0) b_a_cs = i; break;
-				case '{': if (brackets_b++ == 0) b_b_cs = i; break;
-				case '(': if (brackets_c++ == 0) b_c_cs = i; break;
+				case '[': if (brackets_a++ == 0) b_a_cs = i; if (brackets_a == 1) f_a_cs = i; break;
+				case '{': if (brackets_b++ == 0) b_b_cs = i; if (brackets_b == 1) f_b_cs = i; break;
+				case '(': if (brackets_c++ == 0) b_c_cs = i; if (brackets_c == 1) f_c_cs = i; break;
 
-				case ']': if (--brackets_a < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Square bracket count mismatch (-1)")); } break;
-				case '}': if (--brackets_b < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Curly bracket count mismatch (-1)")); } break;
-				case ')': if (--brackets_c < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Round bracket count mismatch (-1)")); } break;
+				case ']': if (--brackets_a < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Square bracket count mismatch (-1), first '[' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_a_cs) + addline)); } break;
+				case '}': if (--brackets_b < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Curly bracket count mismatch (-1), first '}' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_b_cs) + addline)); } break;
+				case ')': if (--brackets_c < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Round bracket count mismatch (-1), first ')' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_c_cs) + addline)); } break;
 
 				case '"':
 					if (i == 0 || this->CurrentChunk[i - 1] != '\\') {
@@ -183,7 +187,7 @@ namespace BromScript {
 
 		if (inquotes) {
 			this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, q_cs) + addline;
-			this->ThrowError(CString::Format("Quote count mismatch"));
+			this->ThrowError(CString::Format("Ending quote not found"));
 		}
 
 		this->DoProcess();
@@ -869,13 +873,14 @@ doreturn:
 
 			List<CompilerLocalData> locals;
 
+			List<bool> isreflist;
 			for (int i2 = 0; i2 < funcargs.Count(); i2++) {
 				CString curarg = funcargs[i2];
 				int spacepos = curarg.IndexOf(' ');
 				int vartype = -1;
 				if (spacepos > -1) {
 					CString typestr = curarg.Substring(0, spacepos);
-					curarg = curarg.Substring(spacepos + 1);
+					curarg = curarg.Substring(spacepos + 1).Trim();
 
 					if (typestr == "number") vartype = VariableType::Number;
 					else if (typestr == "bool") vartype = VariableType::Bool;
@@ -885,13 +890,17 @@ doreturn:
 					else vartype = VariableType::Userdata;
 				}
 
+				if (curarg.StartsWith('&')) {
+					curarg = curarg.Substring(1);
+				}
+				isreflist.Add(funcargs[i2].IndexOf('&') > -1);
+
 				funcargs[i2] = curarg;
 				locals.Add(CompilerLocalData(curarg, vartype));
 			}
 
 			List<CString> looplabels;
 			Compiler chunkproc("Function", funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this->Warnings, this, looplabels);
-
 
 			this->Writer.WriteOperator(Operators::StackFunction);
 			this->Writer.WriteString(this->Filename);
@@ -900,6 +909,7 @@ doreturn:
 			this->Writer.WriteInt(locals.Count);
 			for (int i = 0; i < locals.Count; i++) {
 				this->Writer.WriteString(locals[i].Name);
+				this->Writer.WriteByte(isreflist[i] ? 1 : 0);
 				this->Writer.WriteInt(locals[i].Type);
 			}
 
