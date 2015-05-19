@@ -160,17 +160,61 @@ namespace BromScript {
 
 		int addline = this->Parent == null ? 1 : 0;
 
+		char lastopened = null;
+		List<char> bracketstack;
+		List<int> bracketstackpos;
 		for (int i = 0; i < this->ChunkSize; i++) {
 			char c = this->CurrentChunk[i];
 
 			switch (c) {
-				case '[': if (brackets_a++ == 0) b_a_cs = i; if (brackets_a == 1) f_a_cs = i; break;
-				case '{': if (brackets_b++ == 0) b_b_cs = i; if (brackets_b == 1) f_b_cs = i; break;
-				case '(': if (brackets_c++ == 0) b_c_cs = i; if (brackets_c == 1) f_c_cs = i; break;
+				case '[': if (brackets_a++ == 0) b_a_cs = i; if (brackets_a == 1) f_a_cs = i; bracketstack.Add(']'); bracketstackpos.Add(i); break;
+				case '{': if (brackets_b++ == 0) b_b_cs = i; if (brackets_b == 1) f_b_cs = i; bracketstack.Add('}'); bracketstackpos.Add(i); break;
+				case '(': if (brackets_c++ == 0) b_c_cs = i; if (brackets_c == 1) f_c_cs = i; bracketstack.Add(')'); bracketstackpos.Add(i); break;
 
-				case ']': if (--brackets_a < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Square bracket count mismatch (-1), first '[' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_a_cs) + addline)); } break;
-				case '}': if (--brackets_b < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Curly bracket count mismatch (-1), first '}' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_b_cs) + addline)); } break;
-				case ')': if (--brackets_c < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Round bracket count mismatch (-1), first ')' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_c_cs) + addline)); } break;
+				case ']':{
+					if (bracketstack[bracketstack.Count - 1] != c) {
+						this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i);
+						this->ThrowError(CString::Format("Expected '%c' tag, instead we got a '%c' tag, start tag at line %d", bracketstack[bracketstack.Count - 1], c, this->GetCurrentLine(this->CurrentChunk, bracketstackpos[bracketstackpos.Count - 1]) + addline));
+					}
+
+					if (--brackets_a < 0) {
+						this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i);
+						this->ThrowError(CString::Format("Square bracket count mismatch (-1), first '[' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_a_cs) + addline));
+					}
+
+					bracketstack.RemoveAt(bracketstack.Count - 1);
+					bracketstackpos.RemoveAt(bracketstackpos.Count - 1);
+				} break;
+
+				case '}':{
+					if (bracketstack[bracketstack.Count - 1] != c) {
+						this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i);
+						this->ThrowError(CString::Format("Expected '%c' tag, instead we got a '%c' tag, start tag at line %d", bracketstack[bracketstack.Count - 1], c, this->GetCurrentLine(this->CurrentChunk, bracketstackpos[bracketstackpos.Count - 1]) + addline));
+					}
+
+					if (--brackets_b < 0) {
+						this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i);
+						this->ThrowError(CString::Format("Curly bracket count mismatch (-1), first '}' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_b_cs) + addline));
+					}
+
+					bracketstack.RemoveAt(bracketstack.Count - 1);
+					bracketstackpos.RemoveAt(bracketstackpos.Count - 1);
+				} break;
+				
+				case ')':{
+					if (bracketstack[bracketstack.Count - 1] != c) {
+						this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i);
+						this->ThrowError(CString::Format("Expected '%c' tag, instead we got a '%c' tag, start tag at line %d", bracketstack[bracketstack.Count - 1], c, this->GetCurrentLine(this->CurrentChunk, bracketstackpos[bracketstackpos.Count - 1]) + addline));
+					}
+
+					if (--brackets_c < 0) {
+						this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i);
+						this->ThrowError(CString::Format("Round bracket count mismatch (-1), first ')' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_c_cs) + addline));
+					}
+
+					bracketstack.RemoveAt(bracketstack.Count - 1);
+					bracketstackpos.RemoveAt(bracketstackpos.Count - 1);
+				} break;
 
 				case '"':
 					if (i == 0 || this->CurrentChunk[i - 1] != '\\') {
@@ -181,12 +225,12 @@ namespace BromScript {
 			}
 		}
 
-		if (brackets_a > 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, b_a_cs) + addline; this->ThrowError(CString::Format("Square bracket count mismatch (%d)", brackets_a)); }
-		if (brackets_b > 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, b_b_cs) + addline; this->ThrowError(CString::Format("Curly bracket count mismatch (%d)", brackets_b)); }
-		if (brackets_c > 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, b_c_cs) + addline; this->ThrowError(CString::Format("Round bracket count mismatch (%d)", brackets_c)); }
+		if (brackets_a > 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, b_a_cs); this->ThrowError(CString::Format("Square bracket count mismatch (%d)", brackets_a)); }
+		if (brackets_b > 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, b_b_cs); this->ThrowError(CString::Format("Curly bracket count mismatch (%d)", brackets_b)); }
+		if (brackets_c > 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, b_c_cs); this->ThrowError(CString::Format("Round bracket count mismatch (%d)", brackets_c)); }
 
 		if (inquotes) {
-			this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, q_cs) + addline;
+			this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, q_cs);
 			this->ThrowError(CString::Format("Ending quote not found"));
 		}
 
