@@ -75,6 +75,7 @@ bool sleepatend = false;
 bool openshell = true;
 bool forceopenshell = false;
 bool warningsareerrors = false;
+bool attachdebugger = false;
 
 void OutputSuccess(const char* type, const char* file, int line, const char* msg) {
 	if (line > -1) {
@@ -188,6 +189,7 @@ int main(int argc, char* argv[]) {
 					case 'f': formated = true; break;
 					case 'r': shouldrun = true; break;
 					case 'n': warningsareerrors = true; break;
+					case 'a': attachdebugger = true; break;
 
 					case 'c':
 						shouldcompile = true;
@@ -226,6 +228,7 @@ int main(int argc, char* argv[]) {
 						printf("-n -- treat warnings as errors\n");
 						printf("-w -- sleep until newline at stdin after tasks\n");
 						printf("-i -- open interpreter shell\n");
+						printf("-a -- attach debugger pre-execution\n");
 						printf("last argument should be the file you want to run\n");
 						printf("If you just want to execute a file, just supply the filename\n");
 						printf("\n");
@@ -296,6 +299,14 @@ int main(int argc, char* argv[]) {
 
 				bsi.SetErrorCallback(errfunc);
 				bsi.RegisterFunction("print", Print);
+
+				if (attachdebugger) {
+					if (!bsi.Debug->Connect()) {
+						OutputWarning("Runtime", arg.c_str(), -1, "Failed to attach pre-execution debugger");
+					} else {
+						OutputNotice("Runtime", arg.c_str(), "Attach pre-execution debugger");
+					}
+				}
 
 				try {
 					bsi.DoFile(arg.c_str());

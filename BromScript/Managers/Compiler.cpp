@@ -890,7 +890,7 @@ doreturn:
 			}
 
 			List<CString> looplabels;
-			Compiler chunkproc("AnonFunction", funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this->Warnings, this, looplabels);
+			Compiler chunkproc("Function", funcchunk.str_szBuffer, funcchunk.Size(), this->WriteLineNumbers, locals, this->Labels, this->Gotos, this->Warnings, this, looplabels);
 
 
 			this->Writer.WriteOperator(Operators::StackFunction);
