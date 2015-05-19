@@ -164,9 +164,9 @@ namespace BromScript {
 				case '{': if (brackets_b++ == 0) b_b_cs = i; break;
 				case '(': if (brackets_c++ == 0) b_c_cs = i; break;
 
-				case ']': if (--brackets_a < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Square bracket count mismatch (-1), opening '[' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_a_cs) + addline)); } break;
-				case '}': if (--brackets_b < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Curly bracket count mismatch (-1), opening '}' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_b_cs) + addline)); } break;
-				case ')': if (--brackets_c < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Round bracket count mismatch (-1), opening ')' tag at line %d", this->GetCurrentLine(this->CurrentChunk, b_c_cs) + addline)); } break;
+				case ']': if (--brackets_a < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Square bracket count mismatch (-1)")); } break;
+				case '}': if (--brackets_b < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Curly bracket count mismatch (-1)")); } break;
+				case ')': if (--brackets_c < 0) { this->CurrentStatmentLine = this->GetCurrentLine(this->CurrentChunk, i) + addline; this->ThrowError(CString::Format("Round bracket count mismatch (-1)")); } break;
 
 				case '"':
 					if (i == 0 || this->CurrentChunk[i - 1] != '\\') {
