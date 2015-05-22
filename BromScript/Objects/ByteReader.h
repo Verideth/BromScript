@@ -31,11 +31,11 @@ namespace BromScript {
 		Scratch::CString* StringTable;
 		unsigned char* Code;
 
-                inline unsigned char ReadByte() {
+		inline unsigned char ReadByte() {
 			return this->Code[this->Pos++];
 		}
 
-                inline unsigned char* ReadBytes(int len) {
+		inline unsigned char* ReadBytes(int len) {
 			unsigned char* ret = new unsigned char[len];
 			memcpy(ret, this->Code + this->Pos, len);
 			this->Pos += len;
@@ -43,11 +43,11 @@ namespace BromScript {
 			return ret;
 		}
 
-                inline bool ReadBool() {
+		inline bool ReadBool() {
 			return this->Code[this->Pos++] == 1;
 		}
 
-                inline double ReadDouble() {
+		inline double ReadDouble() {
 			double num = 0;
 			memcpy(&num, this->Code + this->Pos, 8);
 			this->Pos += 8;
@@ -55,7 +55,7 @@ namespace BromScript {
 			return num;
 		}
 
-                inline short ReadShort() {
+		inline short ReadShort() {
 			short num = 0;
 			memcpy(&num, this->Code + this->Pos, 2);
 
@@ -63,7 +63,7 @@ namespace BromScript {
 			return num;
 		}
 
-                inline int ReadInt() {
+		inline int ReadInt() {
 			int num = 0;
 			memcpy(&num, this->Code + this->Pos, 4);
 
@@ -71,7 +71,7 @@ namespace BromScript {
 			return num;
 		}
 
-                inline Scratch::CString& ReadString() {
+		inline Scratch::CString& ReadString() {
 			return this->StringTable[this->ReadShort()];
 		}
 
