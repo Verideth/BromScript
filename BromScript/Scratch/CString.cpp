@@ -677,11 +677,11 @@ char& CString::operator[](int iIndex) {
 	return this->str_szBuffer[iIndex];
 }
 
-CString operator+(CString &strLHS, const char* szRHS) {
+CString operator+(const CString &strLHS, const char* szRHS) {
 	return CString(strLHS) += szRHS;
 }
 
-CString operator+(CString &strLHS, const char cRHS) {
+CString operator+(const CString &strLHS, const char cRHS) {
 	return CString(strLHS) += cRHS;
 }
 

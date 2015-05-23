@@ -242,7 +242,7 @@ namespace BromScript {
 
 			if (this->FixedLocalTypes[i] != -1) {
 				if (var->Type != this->FixedLocalTypes[i]) {
-					BS_THROW_ERROR(this->BromScript, CString::Format("Expected type %s at argument %d, but got %s", Converter::TypeToString(this->BromScript, (VariableType::Enum)this->FixedLocalTypes[i]), i + 1, Converter::TypeToString(this->BromScript, var->Type)).str_szBuffer);
+					BS_THROW_ERROR(this->BromScript, CString::Format("Expected type %s at argument %d, but got %s", (const char*)Converter::TypeToString(this->BromScript, (VariableType::Enum)this->FixedLocalTypes[i]), i + 1, (const char*)Converter::TypeToString(this->BromScript, var->Type)).str_szBuffer);
 					return this->BromScript->GetDefaultVarNull();
 				}
 			}
