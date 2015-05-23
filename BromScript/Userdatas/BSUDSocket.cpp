@@ -139,7 +139,7 @@ namespace BromScript{
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_SOCKET_TYPE, true))return null;
 
 				EzSock* sock = (EzSock*)args->GetThisObjectData();
-				return Converter::ToVariable(bsi, inet_ntoa(sock->addr.sin_addr));
+				return Converter::ToVariable(bsi, Scratch::CString(inet_ntoa(sock->addr.sin_addr)));
 			}
 
 			BS_FUNCTION(SetBlocking) {

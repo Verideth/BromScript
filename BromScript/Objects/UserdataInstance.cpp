@@ -42,13 +42,12 @@ namespace BromScript{
 		BS_THROW_ERROR(this->TypeData->BromScript, Scratch::CString::Format("No index called '%s' to set in %s type", keyvar->ToString(this->TypeData->BromScript).str_szBuffer, Converter::TypeToString(this->TypeData->BromScript, (VariableType::Enum)this->TypeData->TypeID).str_szBuffer));
 	}
 
-	Variable* UserdataInstance::GetIndex(Variable* selfobj, Variable* keyvar) {
-		Variable* ret = null;
-		Scratch::CString key = keyvar->ToString(this->TypeData->BromScript);
-
+	Variable* UserdataInstance::GetMember(const Scratch::CString& key) {
 		for (int i = 0; i < this->TypeData->Members.Count; i++) {
 			Userdata* ud = this->TypeData->Members[i];
 			if (ud->Name == key) {
+				Variable* ret = null;
+
 				if (ud->Getter != null) {
 					ret = ud->Getter(this->TypeData->BromScript, (byte*)this->Ptr + ud->Offset);
 
@@ -69,6 +68,10 @@ namespace BromScript{
 			}
 		}
 
+		return null;
+	}
+
+	Variable* UserdataInstance::GetMethod(const Scratch::CString& key) {
 		for (int i = 0; i < this->TypeData->Functions.Count(); i++) {
 			if (this->TypeData->Functions.GetKeyByIndex(i) == key) {
 				Function* func = new Function(this->TypeData->BromScript);
@@ -78,13 +81,26 @@ namespace BromScript{
 				func->Filename = "C++";
 				func->SetReferences(this->TypeData->BromScript->GetCurrentFunction(), 0);
 
-				ret = this->TypeData->BromScript->GC.GetPooledVariable();
+				Variable* ret = this->TypeData->BromScript->GC.GetPooledVariable();
 				ret->Type = VariableType::Function;
 				ret->Value = func;
 
 				return ret;
 			}
 		}
+
+		return null;
+	}
+
+	Variable* UserdataInstance::GetIndex(Variable* selfobj, Variable* keyvar) {
+		Variable* ret = null;
+		Scratch::CString key = keyvar->ToString(this->TypeData->BromScript);
+
+		Variable* member = this->GetMember(key);
+		if (member != null) return member;
+
+		Variable* method = this->GetMethod(key);
+		if (method != null) return method;
 
 		int index = BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticGetIndex);
 		if (this->TypeData->OperatorsOverrides[index] != null) {

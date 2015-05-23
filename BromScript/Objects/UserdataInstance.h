@@ -15,6 +15,8 @@ namespace BromScript{
 		UserdataInstance(void);
 		~UserdataInstance(void);
 
+		Variable* GetMember(const Scratch::CString& key);
+		Variable* GetMethod(const Scratch::CString& key);
 		Variable* GetIndex(Variable* selfobj, Variable* keyvar);
 		void SetIndex(Variable* selfobj, Variable* keyvar, Variable* value);
 	};

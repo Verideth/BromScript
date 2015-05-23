@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace Scratch;
 
 namespace BromScript{
-	bool Converter::SetMember(Instance* bromscript, Variable* member, Variable* value, CString key) {
+	bool Converter::SetMember(Instance* bromscript, Variable* member, Variable* value, const CString &key) {
 		UserdataInstance* udi = (UserdataInstance*)member->Value;
 
 		if (udi->TypeData->Setter != null) {
@@ -122,12 +122,7 @@ namespace BromScript{
 		return new double(val);
 	}
 
-
-	Variable* Converter::ToVariable(Instance* bromscript, const char* key, BSFunction value) {
-		return Converter::ToVariable(bromscript, CString(key), value);
-	}
-
-	Variable* Converter::ToVariable(Instance* bromscript, CString key, BSFunction value) {
+	Variable* Converter::ToVariable(Instance* bromscript, const CString &key, BSFunction value) {
 		Function* varfunc = new Function(bromscript);
 		varfunc->CppFunc = value;
 		varfunc->Filename = "C++";
@@ -176,14 +171,7 @@ namespace BromScript{
 		return ret;
 	}
 
-	Variable* Converter::ToVariable(Instance* bromscript, const char* value) {
-		Variable* ret = bromscript->GC.GetPooledVariable();
-		ret->Type = VariableType::String;
-		ret->Value = Converter::StringToPointer(value);
-		return ret;
-	}
-
-	Variable* Converter::ToVariable(Instance* bromscript, CString value) {
+	Variable* Converter::ToVariable(Instance* bromscript, const CString &value) {
 		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::String;
 		ret->Value = Converter::StringToPointer(value);

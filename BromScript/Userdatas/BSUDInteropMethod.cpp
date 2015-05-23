@@ -113,7 +113,7 @@ namespace BromScript{
 					case MemberType::Short: return Converter::ToVariable(bsi, (short)retdata);
 					case MemberType::Int: return Converter::ToVariable(bsi, retdata);
 					case MemberType::Float: return Converter::ToVariable(bsi, *(float*)&retdata);
-					case MemberType::String: return Converter::ToVariable(bsi, (char*)retdata);
+					case MemberType::String: return Converter::ToVariable(bsi, Scratch::CString((const char*)retdata));
 				}
 
 				return null;

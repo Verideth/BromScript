@@ -34,19 +34,17 @@ namespace BromScript{
 		static Variable* ToVariable(Instance* bromscript, int value);
 		static Variable* ToVariable(Instance* bromscript, long long value);
 		static Variable* ToVariable(Instance* bromscript, float value);
-		static Variable* ToVariable(Instance* bromscript, const char* value);
-		static Variable* ToVariable(Instance* bromscript, Scratch::CString value);
+		static Variable* ToVariable(Instance* bromscript, const Scratch::CString &value);
 		static Variable* ToVariable(Instance* bromscript, Table* value);
-		static Variable* ToVariable(Instance* bromscript, const char* key, BSFunction value);
-		static Variable* ToVariable(Instance* bromscript, Scratch::CString key, BSFunction value);
+		static Variable* ToVariable(Instance* bromscript, const Scratch::CString &key, BSFunction value);
 
-		static bool SetMember(Instance* bromscript, Variable* member, Variable* value, Scratch::CString key);
+		static bool SetMember(Instance* bromscript, Variable* member, Variable* value, const Scratch::CString &key);
 		static Variable* MemberToVariable(Instance* bromscript, Variable* member);
 
 		static void* NumberToPointer(Instance* bromscript, double val);
 		inline static void* NumberToPointer(double val) { return new double(val); }
 		inline static void* BoolToPointer(bool val) { return (void*)(val ? 1 : 0); }
-		inline static void* StringToPointer(Scratch::CString val) { return new Scratch::CString(val); }
+		inline static void* StringToPointer(const Scratch::CString &val) { return new Scratch::CString(val); }
 
 		static Scratch::CString TypeToString(Variable* var);
 		static Scratch::CString TypeToString(VariableType::Enum type);

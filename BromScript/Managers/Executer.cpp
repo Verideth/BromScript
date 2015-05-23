@@ -363,7 +363,7 @@ namespace BromScript {
 
 			data->Function->StringTable[i].str_szBuffer = destbuff;
 
-			data->Function->StringTableVars[i] = data->BromScript->GC.RegisterVariable(Converter::ToVariable(data->BromScript, destbuff));
+			data->Function->StringTableVars[i] = data->BromScript->GC.RegisterVariable(Converter::ToVariable(data->BromScript, CString(destbuff)));
 			BS_REF_INCREESE(data->Function->StringTableVars[i]);
 
 			delete[] tmpbuff;
@@ -461,6 +461,16 @@ namespace BromScript {
 
 		if (tbl->Type == VariableType::Table) {
 			data->PushStack(tbl->GetTable()->Get(keyvar->ToString(data->BromScript)));
+			return;
+		}
+
+		if (tbl->Type == VariableType::String) {
+			if (keyvar->Type == VariableType::Number) {
+				data->PushStack(Converter::ToVariable(data->BromScript, CString(tbl->GetString()[(int)keyvar->GetNumber()])));
+				return;
+			}
+
+			BS_THROW_ERROR(data->BromScript, CString::Format("Cannot index a string with %s", Converter::TypeToString(data->BromScript, keyvar->Type).str_szBuffer));
 			return;
 		}
 

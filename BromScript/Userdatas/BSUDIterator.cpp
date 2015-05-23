@@ -43,10 +43,35 @@ namespace BromScript {
 			BS_FUNCTION(NextKey) {
 				IteratorClass* iter = (IteratorClass*)args->GetThisObjectData();
 
-				iter->CurrentIndex = iter->Object->GetTable()->GetNextIndex(iter->CurrentIndex);
+				if (iter->Object->Type == VariableType::Table) {
+					iter->CurrentIndex = iter->Object->GetTable()->GetNextIndex(iter->CurrentIndex);
 
-				if (iter->CurrentIndex == -1) return null;
-				return Converter::ToVariable(bsi, iter->Object->GetTable()->GetKeyByIndex(iter->CurrentIndex++));
+					if (iter->CurrentIndex == -1) return null;
+					return Converter::ToVariable(bsi, iter->Object->GetTable()->GetKeyByIndex(iter->CurrentIndex++));
+				}
+
+				if (iter->Object->Type >= VariableType::Userdata) {
+					UserdataInstance* udi = (UserdataInstance*)iter->Object->Value;
+					Variable* nextkeyvar = udi->GetMethod("NextKey");
+					if (nextkeyvar != null) {
+						ArgumentData args;
+						args.BromScript = bsi;
+						args.Caller = bsi->GetCurrentFunction();
+						args.SetThisObject(iter->Object);
+
+						Variable* ret = nextkeyvar->GetFunction()->Run(&args);
+						args.Clear();
+
+						if (ret == null) ret = bsi->GetDefaultVarNull();
+						else bsi->GC.RegisterVariable(ret);
+
+						return ret;
+					}
+
+					BS_THROW_ERROR(bsi, Scratch::CString::Format("Cannot iterate an '%s'", Converter::TypeToString(bsi, iter->Object->Type).str_szBuffer));
+				}
+
+				return null;
 			}
 
 			BS_FUNCTION(GetIndex) {
