@@ -63,7 +63,9 @@ template<class T> inline T Abs(const T &v) { return v < 0 ? -v : v; }
 }
 #endif
 #else
+#ifndef ASSERT
 #define ASSERT(expr) assert(expr)
+#endif
 #endif
 
 #endif // include once check
