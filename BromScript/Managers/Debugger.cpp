@@ -120,7 +120,7 @@ namespace BromScript {
 		p.Send();
 
 		p.WriteByte(1);
-		p.WriteInt((int)this->BSI);
+		p.WriteLong((long long)this->BSI);
 		p.Send();
 
 		this->Connected = true;

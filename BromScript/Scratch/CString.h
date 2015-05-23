@@ -95,8 +95,8 @@ public:
 	char& operator[](int iIndex);
 };
 
-CString operator+(CString &strLHS, const char* szRHS);
-CString operator+(CString &strLHS, const char cRHS);
+CString operator+(const CString &strLHS, const char* szRHS);
+CString operator+(const CString &strLHS, const char cRHS);
 
 SCRATCH_NAMESPACE_END;
 #endif // include once check
