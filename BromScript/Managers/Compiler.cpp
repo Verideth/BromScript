@@ -2160,8 +2160,10 @@ doreturn:
 				nextline = CString(nextlineptr);
 				if (nextline.StartsWith("elseif (") || nextline.StartsWith("elseif(") || nextline.StartsWith("else if") || nextline == "elseif") {
 					nextif = 1;
+					labelname_nextblock = this->GetUniqueLabelName();
 				} else if (nextline.StartsWith("else{") || nextline.StartsWith("else {") || (nextline.StartsWith("else") && nextline.Size() == 4)) {
 					nextif = 2;
+					labelname_nextblock = this->GetUniqueLabelName();
 				}
 
 				delete nextlineptr;

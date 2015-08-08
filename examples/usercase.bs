@@ -30,6 +30,14 @@ if (#tbl != 0) error("Tbl Count or remove wrong: " + #tbl)
 if (2 == 1) {error("else wrong")} else {}
 if (3 == 1) {error("else if wrong")} elseif (2 + 2 == 4) {} else {error("else if wrong")}
 
+local iftest = 0
+if (1 == 1) {iftest += 1} else { error("if wrong") }
+if (iftest != 1) { error("if wrong") }
+if (3 == 1) {error("1 else if wrong")} elseif (2 + 2 == 4) {iftest += 1} else {error("2 else if wrong")}
+if (iftest != 2) { error("3 else if wrong") }
+if (3 == 1) {error("1 else if wrong")} elseif (2 + 2 == 4) {iftest += 1} else { error("2 else if wrong") }
+if (iftest != 3) { error("else if else wrong") }
+
 local backtest = false
 function a(){
 	error("goto function jump invalid")
