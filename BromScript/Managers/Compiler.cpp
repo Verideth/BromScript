@@ -950,12 +950,6 @@ doreturn:
 			this->Writer.WriteString(this->Filename);
 			this->Writer.WriteStrings(funcargs, true);
 
-			this->Writer.WriteInt(locals.Count);
-			for (int i = 0; i < locals.Count; i++) {
-				this->Writer.WriteString(locals[i].Name);
-				this->Writer.WriteByte(isreflist[i] ? 1 : 0);
-				this->Writer.WriteInt(locals[i].Type);
-			}
 
 			this->Writer.Count += 4; // to fix label offsets
 			int labelstart = this->Labels.Count();
@@ -986,6 +980,13 @@ doreturn:
 			this->Writer.WriteInt(codelen);
 			this->Writer.WriteBytes(bytecode, codelen - 1, false);
 			this->Writer.WriteOperator(Operators::EndScope); // write the end scope to be sure the function always returns
+
+			this->Writer.WriteInt(locals.Count);
+			for (int i = 0; i < locals.Count; i++) {
+				this->Writer.WriteString(locals[i].Name);
+				this->Writer.WriteByte(i < funcargs.Count() ? (isreflist[i] ? 1 : 0) : 0); // locals in function scope are not references (todo perhaps?)
+				this->Writer.WriteInt(locals[i].Type);
+			}
 
 			delete[] bytecode;
 		} else if (arg == "new" || arg.StartsWith("new ")) {

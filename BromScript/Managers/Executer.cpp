@@ -744,6 +744,11 @@ namespace BromScript {
 			func->Parameters.Add(CString(params->Get(i)));
 		}
 
+		int codelen = data->Reader->ReadInt();
+
+		func->SetReferences(data->Function, data->Reader->Pos);
+		data->Reader->Pos += codelen;
+
 		int localscount = data->Reader->ReadInt();
 		func->FixedLocalsCount = localscount;
 		func->FixedLocalVars = new Variable*[localscount];
@@ -757,10 +762,6 @@ namespace BromScript {
 			func->FixedLocalTypes[i] = data->Reader->ReadInt();
 			func->FixedLocalVars[i] = null;
 		}
-
-		int codelen = data->Reader->ReadInt();
-		func->SetReferences(data->Function, data->Reader->Pos);
-		data->Reader->Pos += codelen;
 
 		delete params;
 
