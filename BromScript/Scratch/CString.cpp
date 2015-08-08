@@ -132,12 +132,12 @@ CString CString::Format(const char* format, ...) {
 	va_list vl;
 	va_start(vl, format);
 
-	int nsize = vsnprintf(buffer, size, format, vl);
-	if (size <= nsize) { //fail delete buffer and try again
+	int nsize;
+	while ((nsize = vsnprintf(buffer, size, format, vl)) == -1 || size <= nsize) { //fail delete buffer and try again
 		delete[] buffer;
 
-		buffer = new char[nsize + 1]; //+1 for /0
-		nsize = vsnprintf(buffer, size, format, vl);
+		size += size;
+		buffer = new char[size]; //+1 for /0
 	}
 
 	va_end(vl);
