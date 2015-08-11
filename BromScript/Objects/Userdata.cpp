@@ -25,7 +25,7 @@
 using namespace Scratch;
 
 namespace BromScript{
-	Userdata::Userdata() :CallDTor(false), Name(""), Offset(0), TypeID(0), TypeSize(0), Getter(nullptr), Setter(nullptr), Inheriter(nullptr) {
+	Userdata::Userdata() :CallDTor(false), Name(""), Offset(0), TypeID(0), TypeSize(0), Getter(nullptr), Setter(nullptr), InheritFrom(nullptr) {
 		memset(this->OperatorsOverrides, 0, sizeof(this->OperatorsOverrides));
 	}
 
