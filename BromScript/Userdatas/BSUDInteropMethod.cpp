@@ -36,10 +36,6 @@ namespace BromScript{
 				delete[] this->Args;
 			}
 
-			void* CInteropMethod::Call() {
-				return null;
-			}
-
 			BS_FUNCTION_DTOR(DTOR) {
 				delete (CInteropMethod*)data;
 			}

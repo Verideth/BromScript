@@ -156,6 +156,14 @@ local enumtest = enum {
 }
 if (enumtest.one != 1) error("Enum wrong")
 
+local tbl = {}
+function tbl.key(num) {
+	return num + 1
+}
+tbl[tbl.key(1)] = true
+if (!tbl[2]) error("Table set index with function call invalid")
+
+
 function reftest(number &num, number num2) {
 	num++
 	num2++
@@ -164,7 +172,6 @@ function reftest(number &num, number num2) {
 local number a = 0
 local number b = 0
 reftest(a, b)
-print(a, b)
 if (a == 0) error("Function param by reference invalid")
 if (b == 1) error("Function param by value invalid")
 

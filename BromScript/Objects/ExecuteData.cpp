@@ -21,13 +21,16 @@
 using namespace Scratch;
 
 namespace BromScript {
-	ExecuteData::ExecuteData(void) : Reader(null), StackPos(0), StackSize(0), Stack(0) {
+	ExecuteData::ExecuteData(void) : Reader(nullptr), StackPos(0), StackSize(0), Stack(nullptr) {
 		this->AllocateMoreSpace(32);
 	}
 
 	ExecuteData::~ExecuteData(void) {
 		for (int i = 0; i < this->StackPos; i++) {
-			BS_REF_DECREESE(this->Stack[i]);
+			if (this->Stack[i] != null) {
+				BS_REF_DECREESE(this->Stack[i]);
+				this->Stack[i] = nullptr;
+			}
 		}
 
 		if (this->Reader != null) delete this->Reader;
@@ -37,12 +40,12 @@ namespace BromScript {
 		this->StackSize += num;
 		Variable** newbuff = (Variable**)malloc(sizeof(Variable*) * this->StackSize);
 
-		if (this->Stack != null) {
+		if (this->Stack != nullptr) {
 			memcpy(newbuff, this->Stack, sizeof(Variable*) * (this->StackSize - num));
 			free(this->Stack);
 		}
 
 		this->Stack = newbuff;
-		memset(this->Stack, this->StackPos * sizeof(Variable*), sizeof(Variable*) * (this->StackSize - this->StackPos));
+		memset(this->Stack + this->StackSize - num, 0, sizeof(Variable*) * num);
 	}
 }

@@ -597,7 +597,7 @@ namespace BromScript {
 				canend = false;
 			}
 
-			if (currentindex % 1024 == 0) {
+			if (currentindex % 1024 <= 1) { // we'd do == 0 here, but below at the doreturn label we need to set the null terminator, so c/v the code there, check for this rather than 0
 				char* tmpnew = new char[currentindex + 1024];
 
 				if (currentline != null) {
@@ -1763,7 +1763,7 @@ doreturn:
 
 		int argpos = this->FindChar(line, 0, "(", 1);
 		if (argpos != 0) {
-			int argendpos = this->FindChar(line, argpos + 1, ")", 1);
+			int argendpos = this->FindChar(line, argpos, ")", 1);
 			if (argendpos == -1)
 				this->ThrowError("Error, no ) at while");
 
@@ -2067,15 +2067,17 @@ doreturn:
 					if (argposend == -1) this->ThrowError(CString::Format("Expected end of function call ')' at '%s'", funcline.str_szBuffer));
 					if (argposend + 1 < funcline.Size()) this->ThrowError(CString::Format("Cannot compute '%s'", funcline.str_szBuffer));
 
-					List<CString> tmpisfunctbl;
-					this->GetIndexes(funcline.Substring(argpos + 1, argposend - argpos - 1), &tmpisfunctbl);
+					if (funcline.Substring(argpos + 1, -1).Trim().Size() == 0) {
+						List<CString> tmpisfunctbl;
+						this->GetIndexes(funcline.Substring(argpos + 1, argposend - argpos - 1), &tmpisfunctbl);
 
-					func = true;
-					funcline = funcline.Substring(argpos + 1, -1);
-					varname = varname.Substring(0, argpos);
+						func = true;
+						funcline = funcline.Substring(argpos + 1, -1);
+						varname = varname.Substring(0, argpos);
 
-					// duplicate the tbl stack, so that we can use it as a this object in functions
-					this->Writer.WriteOperator(Operators::Duplicate);
+						// duplicate the tbl stack, so that we can use it as a this object in functions
+						this->Writer.WriteOperator(Operators::Duplicate);
+					}
 				}
 
 				varname = varname.Trim();
@@ -2086,7 +2088,12 @@ doreturn:
 				}
 
 				this->WriteArgumentData(varname);
+
 				if (i2 + 1 == tbldata.Count) {
+					if (func) {
+						this->WriteCallThis(funcline);
+					}
+
 					this->Writer.WriteOperator(Operators::SetIndex);
 				} else {
 					if (varname != "\"\"" && varname.Size() > 0) {

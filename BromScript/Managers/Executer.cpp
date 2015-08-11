@@ -137,6 +137,7 @@ namespace BromScript {
 				args.AddVariable(b);
 
 				ret = opfunc(data->BromScript, &args);
+
 				if (ret == null) ret = data->BromScript->GetDefaultVarNull();
 				else data->BromScript->GC.RegisterVariable(ret);
 
@@ -148,6 +149,7 @@ namespace BromScript {
 			
 		}
 
+		// TODO: remove this old class/table system
 		Variable* bsobj = null;
 		if (a->Type == VariableType::Table && a->GetTable()->Get("__TYPE")->Type != VariableType::Null) bsobj = a;
 		else if (b->Type == VariableType::Table && b->GetTable()->Get("__TYPE")->Type != VariableType::Null) bsobj = b;
@@ -414,7 +416,11 @@ namespace BromScript {
 
 		if (tbl->Type > VariableType::Userdata) {
 			UserdataInstance* udi = (UserdataInstance*)tbl->Value;
+			BS_REF_INCREESE(tbl);
+			BS_REF_INCREESE(value);
 			udi->SetIndex(tbl, data->BromScript->GC.RegisterVariable(Converter::ToVariable(data->BromScript, key)), value);
+			BS_REF_DECREESE(tbl);
+			BS_REF_INCREESE(value);
 			return;
 		}
 
@@ -443,7 +449,10 @@ namespace BromScript {
 				args.Caller = data->Function;
 				args.SetThisObject(var);
 
+				BS_REF_INCREESE(var);
 				Variable* ret = opfunc(data->BromScript, &args);
+				BS_REF_DECREESE(var);
+
 				args.Clear();
 
 				if (ret == null) ret = data->BromScript->GetDefaultVarNull();
@@ -479,7 +488,11 @@ namespace BromScript {
 		if (tbl->Type > VariableType::Userdata) {
 			UserdataInstance* udi = (UserdataInstance*)tbl->Value;
 
+			BS_REF_INCREESE(keyvar);
+			BS_REF_INCREESE(tbl);
 			data->PushStack(udi->GetIndex(tbl, keyvar));
+			BS_REF_DECREESE(keyvar);
+			BS_REF_DECREESE(tbl);
 			return;
 		}
 
@@ -502,7 +515,15 @@ namespace BromScript {
 
 		if (tbl->Type > VariableType::Userdata) {
 			UserdataInstance* udi = (UserdataInstance*)tbl->Value;
+
+			BS_REF_INCREESE(key);
+			BS_REF_INCREESE(tbl);
+			BS_REF_INCREESE(value);
 			udi->SetIndex(tbl, key, value);
+			BS_REF_DECREESE(key);
+			BS_REF_DECREESE(tbl);
+			BS_REF_DECREESE(value);
+
 			return;
 		}
 
@@ -590,10 +611,8 @@ namespace BromScript {
 		ArgumentData* args = data->BromScript->GC.ArgumentsPool.GetNext();
 		if (args == null) args = new ArgumentData();
 
-
 		args->BromScript = data->BromScript;
 		args->Caller = data->Function;
-		args->BromScript = data->BromScript;
 
 		int argcount = data->Reader->ReadInt();
 		for (int i = 0; i < argcount; i++) {
@@ -602,7 +621,9 @@ namespace BromScript {
 
 		Variable* var = data->PopStack();
 		if (var->Type == VariableType::Function) {
+			BS_REF_INCREESE(var);
 			data->PushStack(var->GetFunction()->Run(args));
+			BS_REF_DECREESE(var);
 
 			args->Clear();
 			data->BromScript->GC.ArgumentsPool.Free(args);
@@ -611,8 +632,14 @@ namespace BromScript {
 
 		if (var->Type > VariableType::Userdata) {
 			UserdataInstance* udi = (UserdataInstance*)var->Value;
-			if (udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticCall)] != null) {
-				Variable* ret = udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticCall)](data->BromScript, args);
+			BSFunction opfunc = udi->GetOperator(Operators::ArithmeticCall);
+			if (opfunc != nullptr) {
+				args->SetThisObject(var);
+
+				BS_REF_INCREESE(var);
+				Variable* ret = opfunc(data->BromScript, args);
+				BS_REF_DECREESE(var);
+
 				args->Clear();
 
 				if (ret == null) ret = data->BromScript->GetDefaultVarNull();
@@ -648,7 +675,11 @@ namespace BromScript {
 		args->SetThisObject(thisvar);
 
 		if (var->Type == VariableType::Function) {
+			BS_REF_INCREESE(var);
+			BS_REF_INCREESE(thisvar);
 			data->PushStack(var->GetFunction()->Run(args, thisvar));
+			BS_REF_DECREESE(thisvar);
+			BS_REF_DECREESE(var);
 
 			args->Clear();
 			data->BromScript->GC.ArgumentsPool.Free(args);
@@ -657,8 +688,14 @@ namespace BromScript {
 
 		if (var->Type > VariableType::Userdata) {
 			UserdataInstance* udi = (UserdataInstance*)var->Value;
-			if (udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticCall)] != null) {
-				Variable* ret = udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticCall)](data->BromScript, args);
+			BSFunction opfunc = udi->GetOperator(Operators::ArithmeticCall);
+			if (opfunc != nullptr) {
+				BS_REF_INCREESE(var);
+				BS_REF_INCREESE(thisvar);
+				Variable* ret = opfunc(data->BromScript, args);
+				BS_REF_DECREESE(thisvar);
+				BS_REF_DECREESE(var);
+
 				args->Clear();
 
 				if (ret == null) ret = data->BromScript->GetDefaultVarNull();

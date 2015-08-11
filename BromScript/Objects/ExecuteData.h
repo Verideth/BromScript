@@ -44,7 +44,7 @@ namespace BromScript {
 		void AllocateMoreSpace(int num);
 
 		inline void PushStack(Variable* var) {
-			if (this->StackPos > this->StackSize) this->AllocateMoreSpace(32);
+			if (this->StackPos >= this->StackSize) this->AllocateMoreSpace(32);
 
 			BS_REF_INCREESE(var);
 			this->Stack[this->StackPos++] = var;
@@ -52,7 +52,7 @@ namespace BromScript {
 
 		inline Variable* PopStack() {
 			Variable* ret = this->Stack[--this->StackPos];
-			this->Stack[this->StackPos] = null;
+			this->Stack[this->StackPos] = nullptr;
 
 			BS_REF_DECREESE(ret);
 			return ret;
