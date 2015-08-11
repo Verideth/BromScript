@@ -41,6 +41,8 @@ namespace BromScript{
 		List<Userdata*> Members;
 		Scratch::CDictionary<Scratch::CString, BSFunction> Functions;
 
+		Userdata* InheritFrom;
+
 		BSFunctionCtor Ctor;
 		BSFunctionDtor Dtor;
 

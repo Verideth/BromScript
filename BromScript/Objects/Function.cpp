@@ -358,11 +358,9 @@ namespace BromScript {
 						Variable* right = data->PopStack();
 						Variable* left = data->PopStack();
 
-						int op = (int)b + (Misc::ArithmaticFuncs::Add - (int)Operators::Arithmetic_START - 1);
-
 						BS_REF_INCREESE(left);
 						BS_REF_INCREESE(right);
-						data->PushStack(data->BromScript->GC.RegisterVariable(Executer::Arithmatic(data, left, right, (Misc::ArithmaticFuncs)op)));
+						data->PushStack(data->BromScript->GC.RegisterVariable(Executer::Arithmatic(data, left, right, b)));
 						BS_REF_DECREESE(right);
 						BS_REF_DECREESE(left);
 

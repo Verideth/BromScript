@@ -32,10 +32,6 @@ namespace BromScript {
 			Continue = 150, AnonFunction, Enum, GetCount, Goto, Rewind, Delete,
 			GlobalLocals, StringTable = 253, CurrentLine = 254, Skip = 255
 		};
-
-		enum ArithmaticFuncs {
-			Add = 100, Substract, Divide, Multiply, And, Or, GreaterThan, LessThan, GreaterOrEqual, LessOrEqual, Equal, NotEqual, BitwiseLeft, BitwiseRight, BitwiseOr, BitwiseAnd, Modulo, Call, GetIndex, SetIndex, Count, ToString, _END
-		};
 	};
 
 	enum class Operators {

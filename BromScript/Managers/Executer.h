@@ -53,7 +53,7 @@ namespace BromScript {
 		static void GlobalLocals(ExecuteData* data);
 		static void CurrentLine(ExecuteData* data);
 
-		static Variable* Arithmatic(ExecuteData* data, Variable* vara, Variable* varb, Misc::ArithmaticFuncs func);
+		static Variable* Arithmatic(ExecuteData* data, Variable* vara, Variable* varb, Operators func);
 	};
 }
 

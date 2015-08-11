@@ -25,7 +25,7 @@
 using namespace Scratch;
 
 namespace BromScript{
-	Userdata::Userdata() :CallDTor(false), Name(""), Offset(0), TypeID(0), TypeSize(0), Getter(null), Setter(null) {
+	Userdata::Userdata() :CallDTor(false), Name(""), Offset(0), TypeID(0), TypeSize(0), Getter(nullptr), Setter(nullptr), Inheriter(nullptr) {
 		memset(this->OperatorsOverrides, 0, sizeof(this->OperatorsOverrides));
 	}
 
@@ -66,7 +66,7 @@ namespace BromScript{
 	}
 
 	void Userdata::RegisterMember(CString name, int offset, int type) {
-		Userdata* md = null;
+		Userdata* md = nullptr;
 		for (int i = 0; i < this->BromScript->RegisteredUserdataTypes.Count; i++) {
 			if (this->BromScript->RegisteredUserdataTypes[i]->TypeID == type) {
 				md = this->BromScript->RegisteredUserdataTypes[i]->Copy();
@@ -74,7 +74,7 @@ namespace BromScript{
 			}
 		}
 
-		if (md == null) {
+		if (md == nullptr) {
 			if (type > MemberType::Bool)
 				throw "Unknown type";
 

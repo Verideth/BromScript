@@ -120,7 +120,7 @@ namespace BromScript {
 		ret->Value = Converter::StringToPointer(CString::Format("%f%s", *(double*)a->Value, ((CString*)b->Value)->str_szBuffer));
 	}
 
-	Variable* Executer::Arithmatic(ExecuteData* data, Variable* a, Variable* b, Misc::ArithmaticFuncs af) {
+	Variable* Executer::Arithmatic(ExecuteData* data, Variable* a, Variable* b, Operators af) {
 		Variable* ret;
 
 		if (a->Type > VariableType::Userdata || b->Type > VariableType::Userdata) {
@@ -129,13 +129,14 @@ namespace BromScript {
 			if (a->Type > VariableType::Userdata) udi = (UserdataInstance*)a->Value;
 			else udi = (UserdataInstance*)b->Value;
 
-			/*
-			if (udi->TypeData->Operators[af - 100] != null) {
+
+			BSFunction opfunc = udi->GetOperator(af);
+			if (opfunc != nullptr) {
 				ArgumentData args;
 				args.AddVariable(a);
 				args.AddVariable(b);
 
-				ret = udi->TypeData->Operators[af - 100](data->BromScript, &args);
+				ret = opfunc(data->BromScript, &args);
 				if (ret == null) ret = data->BromScript->GetDefaultVarNull();
 				else data->BromScript->GC.RegisterVariable(ret);
 
@@ -144,7 +145,7 @@ namespace BromScript {
 				BS_THROW_ERROR(data->BromScript, CString::Format("Invalid arithmatic function!, trying to do %s %s %s", Converter::TypeToString(a).str_szBuffer, Converter::ArithmaticToString(af).str_szBuffer, Converter::TypeToString(b).str_szBuffer));
 				return data->BromScript->GetDefaultVarNull();
 			}
-			*/
+			
 		}
 
 		Variable* bsobj = null;
@@ -176,7 +177,7 @@ namespace BromScript {
 		ret = data->BromScript->GC.GetPooledVariable();
 
 		switch (af) {
-			case Misc::ArithmaticFuncs::Add:
+			case Operators::ArithmeticAdd:
 				if (a->Type == VariableType::Number) {
 					if (b->Type == VariableType::Number) Arithmatic_AddNumber(ret, a, b);
 					if (b->Type == VariableType::String) Arithmatic_AddNumberToString2(ret, a, b);
@@ -186,13 +187,13 @@ namespace BromScript {
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::Substract:
+			case Operators::ArithmeticSubstract:
 				if (a->Type == VariableType::Number) {
 					if (b->Type == VariableType::Number) Arithmatic_SubstractNumber(ret, a, b);
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::Divide:
+			case Operators::ArithmeticDivide:
 				if (a->Type == VariableType::Number) {
 					if (b->Type == VariableType::Number) Arithmatic_DivideNumber(ret, a, b);
 				} else if (a->Type == VariableType::String) {
@@ -200,7 +201,7 @@ namespace BromScript {
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::Multiply:
+			case Operators::ArithmeticMultiply:
 				if (a->Type == VariableType::Number) {
 					if (b->Type == VariableType::Number) Arithmatic_MultiplyNumber(ret, a, b);
 					else if (b->Type == VariableType::String) Arithmatic_MultiplyString(ret, a, b);
@@ -209,8 +210,8 @@ namespace BromScript {
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::NotEqual: // we reverse this later on, saves code
-			case Misc::ArithmaticFuncs::Equal:
+			case Operators::ArithmeticNotEqual: // we reverse this later on, saves code
+			case Operators::ArithmeticEqual:
 				ret->Type = VariableType::Bool;
 				if (a->Type == VariableType::Bool && b->Type == VariableType::Null && a->Value == null) ret->Value = Converter::BoolToPointer(true);
 				else if (b->Type == VariableType::Bool && a->Type == VariableType::Null && b->Value != null) ret->Value = Converter::BoolToPointer(true);
@@ -221,7 +222,7 @@ namespace BromScript {
 				else ret->Value = Converter::BoolToPointer(a->Value == b->Value);
 				break;
 
-			case Misc::ArithmaticFuncs::GreaterThan:
+			case Operators::ArithmeticGreaterThan:
 				ret->Type = VariableType::Bool;
 				if (a->Type != b->Type || a->Type != VariableType::Number) {
 					ret->Value = Converter::BoolToPointer(false);
@@ -230,7 +231,7 @@ namespace BromScript {
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::GreaterOrEqual:
+			case Operators::ArithmeticGreaterOrEqual:
 				ret->Type = VariableType::Bool;
 				if (a->Type != b->Type || a->Type != VariableType::Number) {
 					ret->Value = Converter::BoolToPointer(false);
@@ -239,7 +240,7 @@ namespace BromScript {
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::LessThan:
+			case Operators::ArithmeticLessThan:
 				ret->Type = VariableType::Bool;
 				if (a->Type != b->Type || a->Type != VariableType::Number) {
 					ret->Value = Converter::BoolToPointer(false);
@@ -248,7 +249,7 @@ namespace BromScript {
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::LessOrEqual:
+			case Operators::ArithmeticLessOrEqual:
 				ret->Type = VariableType::Bool;
 				if (a->Type != b->Type || a->Type != VariableType::Number) {
 					ret->Value = Converter::BoolToPointer(false);
@@ -257,7 +258,7 @@ namespace BromScript {
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::Modulo:
+			case Operators::ArithmeticModulo:
 				if (a->Type == VariableType::Number && b->Type == VariableType::Number) {
 					ret->Type = VariableType::Number;
 					ret->Value = Converter::NumberToPointer(fmod((double)*(double*)a->Value, *(double*)b->Value));
@@ -295,38 +296,38 @@ namespace BromScript {
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::And:
+			case Operators::ArithmeticAnd:
 				ret->Type = VariableType::Bool;
 				ret->Value = Converter::BoolToPointer(CheckIfVarTrue(a) && CheckIfVarTrue(b));
 				break;
 
-			case Misc::ArithmaticFuncs::Or:
+			case Operators::ArithmeticOr:
 				ret->Type = VariableType::Bool;
 				ret->Value = Converter::BoolToPointer(CheckIfVarTrue(a) || CheckIfVarTrue(b));
 				break;
 
-			case Misc::ArithmaticFuncs::BitwiseLeft:
+			case Operators::ArithmeticBitwiseLeft:
 				if (a->Type == VariableType::Number && b->Type == VariableType::Number) {
 					ret->Type = VariableType::Number;
 					ret->Value = Converter::NumberToPointer((int)*(double*)a->Value << (int)*(double*)b->Value);
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::BitwiseRight:
+			case Operators::ArithmeticBitwiseRight:
 				if (a->Type == VariableType::Number && b->Type == VariableType::Number) {
 					ret->Type = VariableType::Number;
 					ret->Value = Converter::NumberToPointer((int)*(double*)a->Value >> (int)*(double*)b->Value);
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::BitwiseOr:
+			case Operators::ArithmeticBitwiseOr:
 				if (a->Type == VariableType::Number && b->Type == VariableType::Number) {
 					ret->Type = VariableType::Number;
 					ret->Value = Converter::NumberToPointer((int)*(double*)a->Value | (int)*(double*)b->Value);
 				}
 				break;
 
-			case Misc::ArithmaticFuncs::BitwiseAnd:
+			case Operators::ArithmeticBitwiseAnd:
 				if (a->Type == VariableType::Number && b->Type == VariableType::Number) {
 					ret->Type = VariableType::Number;
 					ret->Value = Converter::NumberToPointer((int)*(double*)a->Value & (int)*(double*)b->Value);
@@ -334,7 +335,7 @@ namespace BromScript {
 				break;
 		}
 
-		if (af == Misc::ArithmaticFuncs::NotEqual) // just rotate around equal, less code, same outcome.
+		if (af == Operators::ArithmeticNotEqual) // just rotate around equal, less code, same outcome.
 			ret->Value = Converter::BoolToPointer(ret->Value == null);
 
 		if (ret->Type == VariableType::Null)
@@ -435,13 +436,14 @@ namespace BromScript {
 
 		if (var->Type > VariableType::Userdata) {
 			UserdataInstance* udi = (UserdataInstance*)var->Value;
-			if (udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticGetCount)] != null) {
+			BSFunction opfunc = udi->GetOperator(Operators::ArithmeticGetCount);
+			if (opfunc != nullptr) {
 				ArgumentData args;
 				args.BromScript = data->BromScript;
 				args.Caller = data->Function;
 				args.SetThisObject(var);
 
-				Variable* ret = udi->TypeData->OperatorsOverrides[BS_ARITHMATICOP_TOFUNCINDEX(Operators::ArithmeticGetCount)](data->BromScript, &args);
+				Variable* ret = opfunc(data->BromScript, &args);
 				args.Clear();
 
 				if (ret == null) ret = data->BromScript->GetDefaultVarNull();

@@ -290,25 +290,25 @@ namespace BromScript{
 		}
 	}
 
-	CString Converter::ArithmaticToString(Misc::ArithmaticFuncs type) {
+	CString Converter::ArithmaticToString(Operators type) {
 		switch (type) {
-			case Misc::ArithmaticFuncs::Add: return "Add";
-			case Misc::ArithmaticFuncs::And: return "And";
-			case Misc::ArithmaticFuncs::Divide: return "Divide";
-			case Misc::ArithmaticFuncs::Equal: return "Equal";
-			case Misc::ArithmaticFuncs::GreaterOrEqual: return "GreaterOrEqual";
-			case Misc::ArithmaticFuncs::GreaterThan: return "GreaterThan";
-			case Misc::ArithmaticFuncs::LessOrEqual: return "LessOrEqual";
-			case Misc::ArithmaticFuncs::LessThan: return "LessThan";
-			case Misc::ArithmaticFuncs::Modulo: return "Modulo";
-			case Misc::ArithmaticFuncs::Multiply: return "Multiply";
-			case Misc::ArithmaticFuncs::NotEqual: return "NotEqual";
-			case Misc::ArithmaticFuncs::Or: return "Or";
-			case Misc::ArithmaticFuncs::Substract: return "Substract";
-			case Misc::ArithmaticFuncs::BitwiseAnd: return "BitwiseAnd";
-			case Misc::ArithmaticFuncs::BitwiseOr: return "BitwiseOr";
-			case Misc::ArithmaticFuncs::BitwiseLeft: return "BitwiseLeft";
-			case Misc::ArithmaticFuncs::BitwiseRight: return "BitwiseRight";
+			case Operators::ArithmeticAdd: return "Add";
+			case Operators::ArithmeticAnd: return "And";
+			case Operators::ArithmeticDivide: return "Divide";
+			case Operators::ArithmeticEqual: return "Equal";
+			case Operators::ArithmeticGreaterOrEqual: return "GreaterOrEqual";
+			case Operators::ArithmeticGreaterThan: return "GreaterThan";
+			case Operators::ArithmeticLessOrEqual: return "LessOrEqual";
+			case Operators::ArithmeticLessThan: return "LessThan";
+			case Operators::ArithmeticModulo: return "Modulo";
+			case Operators::ArithmeticMultiply: return "Multiply";
+			case Operators::ArithmeticNotEqual: return "NotEqual";
+			case Operators::ArithmeticOr: return "Or";
+			case Operators::ArithmeticSubstract: return "Substract";
+			case Operators::ArithmeticBitwiseAnd: return "BitwiseAnd";
+			case Operators::ArithmeticBitwiseOr: return "BitwiseOr";
+			case Operators::ArithmeticBitwiseLeft: return "BitwiseLeft";
+			case Operators::ArithmeticBitwiseRight: return "BitwiseRight";
 			default: return "Unknown";
 		}
 	}

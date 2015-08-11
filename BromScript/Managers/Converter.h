@@ -49,7 +49,7 @@ namespace BromScript{
 		static Scratch::CString TypeToString(Variable* var);
 		static Scratch::CString TypeToString(VariableType::Enum type);
 		static Scratch::CString TypeToString(Instance* bromscript, VariableType::Enum type);
-		static Scratch::CString ArithmaticToString(Misc::ArithmaticFuncs type);
+		static Scratch::CString ArithmaticToString(Operators type);
 
 		static Scratch::CString VariableToString(Variable* var);
 		static Scratch::CString VariableToString(Instance* bromscript, Variable* var);
