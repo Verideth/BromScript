@@ -35,8 +35,10 @@ namespace BromScript{
 		static Variable* ToVariable(Instance* bromscript, long long value);
 		static Variable* ToVariable(Instance* bromscript, float value);
 		static Variable* ToVariable(Instance* bromscript, const Scratch::CString &value);
+		static Variable* ToVariable(Instance* bromscript, const char* value);
 		static Variable* ToVariable(Instance* bromscript, Table* value);
 		static Variable* ToVariable(Instance* bromscript, const Scratch::CString &key, BSFunction value);
+		static Variable* ToVariable(Instance* bromscript, const char* key, BSFunction value);
 
 		static bool SetMember(Instance* bromscript, Variable* member, Variable* value, const Scratch::CString &key);
 		static Variable* MemberToVariable(Instance* bromscript, Variable* member);

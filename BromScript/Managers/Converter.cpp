@@ -136,6 +136,20 @@ namespace BromScript{
 		return ret;
 	}
 
+	Variable* Converter::ToVariable(Instance* bromscript, const char* key, BSFunction value) {
+		Function* varfunc = new Function(bromscript);
+		varfunc->CppFunc = value;
+		varfunc->Filename = "C++";
+		varfunc->IsCpp = true;
+		varfunc->Name = key;
+
+		Variable* ret = bromscript->GC.GetPooledVariable();
+		ret->Type = VariableType::Function;
+		ret->Value = varfunc;
+
+		return ret;
+	}
+
 	Variable* Converter::ToVariable(Instance* bromscript, bool value) {
 		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::Bool;
@@ -172,6 +186,13 @@ namespace BromScript{
 	}
 
 	Variable* Converter::ToVariable(Instance* bromscript, const CString &value) {
+		Variable* ret = bromscript->GC.GetPooledVariable();
+		ret->Type = VariableType::String;
+		ret->Value = Converter::StringToPointer(value);
+		return ret;
+	}
+
+	Variable* Converter::ToVariable(Instance* bromscript, const char* value) {
 		Variable* ret = bromscript->GC.GetPooledVariable();
 		ret->Type = VariableType::String;
 		ret->Value = Converter::StringToPointer(value);
