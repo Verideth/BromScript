@@ -132,6 +132,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Libaries\BSLibDebug.h" />
+    <ClInclude Include="Libaries\dirent.h" />
     <ClInclude Include="Objects\BSEzSock.h" />
     <ClInclude Include="Managers\Debugger.h" />
     <ClInclude Include="Objects\ArgumentData.h" />

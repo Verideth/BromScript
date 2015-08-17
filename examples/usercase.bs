@@ -1,3 +1,11 @@
+if (true || error("If wrong, should not exec second arg at ||")) { }
+local c = false
+if (false || true) { c = true }
+if (!c) error("If wrong, ||, not doing second arg")
+
+if (true && false) { error("If wrong, && 1") }
+if (false && true) { error("If wrong, && 2") }
+
 tbl = {}
 tbl2 = {}
 function tbl.a(){

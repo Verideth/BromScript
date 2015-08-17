@@ -183,6 +183,9 @@
     <ClInclude Include="Objects\PoolTyped.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Libaries\dirent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Scratch\CDictionary.cpp">
