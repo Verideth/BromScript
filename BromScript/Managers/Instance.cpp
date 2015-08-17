@@ -67,10 +67,18 @@ namespace BromScript {
 		BS_REF_DECREESE(this->_Default_Var_True);
 		BS_REF_DECREESE(this->_Default_Var_False);
 
+		for (int i = 0; i < this->RegisteredUserdataTypes.Count; i++) {
+			Userdata* ud = this->RegisteredUserdataTypes[i];
+
+			delete ud->Statics;
+			ud->Statics = nullptr;
+		}
+
 		this->GC.SelfDestruct();
 
-		while (this->RegisteredUserdataTypes.Count > 0)
+		while (this->RegisteredUserdataTypes.Count > 0) {
 			delete this->RegisteredUserdataTypes.RemoveAt(0);
+		}
 
 		delete this->Debug;
 	}
@@ -433,12 +441,11 @@ namespace BromScript {
 			}
 		}
 
-		Userdata* ud = new Userdata();
+		Userdata* ud = new Userdata(this);
 		ud->Name = name;
 		ud->Ctor = ctor;
 		ud->Dtor = dtor;
 		ud->TypeID = typeID;
-		ud->BromScript = this;
 		ud->TypeSize = typesize;
 
 		this->RegisteredUserdataTypes.Add(ud);

@@ -496,6 +496,18 @@ namespace BromScript {
 			return;
 		}
 
+		if (tbl->Type == VariableType::Class) {
+			Function* func = (Function*)tbl->Value;
+			if (func->IsCpp) {
+				Userdata* ud = data->BromScript->GetRegisteredUserdata(func->Name);
+				data->PushStack(ud->Statics->Get(keyvar->ToString(data->BromScript)));
+			} else {
+				// TODO: scripting classes
+			}
+
+			return;
+		}
+
 		BS_THROW_ERROR(data->BromScript, CString::Format("Cannot get an index on a %s", Converter::TypeToString(data->BromScript, tbl->Type).str_szBuffer));
 	}
 
@@ -523,6 +535,23 @@ namespace BromScript {
 			BS_REF_DECREESE(key);
 			BS_REF_DECREESE(tbl);
 			BS_REF_DECREESE(value);
+
+			return;
+		}
+
+		if (tbl->Type == VariableType::Class) {
+			Function* func = (Function*)tbl->Value;
+			if (func->IsCpp) {
+				Userdata* ud = data->BromScript->GetRegisteredUserdata(func->Name);
+
+				if (value->Type == VariableType::Null) {
+					ud->Statics->Remove(key->ToString(data->BromScript));
+				} else {
+					ud->Statics->Set(key->ToString(data->BromScript), value);
+				}
+			} else {
+				// TODO: scripting classes
+			}
 
 			return;
 		}

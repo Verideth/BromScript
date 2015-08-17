@@ -25,7 +25,7 @@
 using namespace Scratch;
 
 namespace BromScript{
-	Userdata::Userdata() :CallDTor(false), Name(""), Offset(0), TypeID(0), TypeSize(0), Getter(nullptr), Setter(nullptr), InheritFrom(nullptr) {
+	Userdata::Userdata(Instance* bsi) : BromScript(bsi), CallDTor(false), Name(""), Offset(0), TypeID(0), TypeSize(0), Getter(nullptr), Setter(nullptr), InheritFrom(nullptr), Statics(new Table(bsi)) {
 		memset(this->OperatorsOverrides, 0, sizeof(this->OperatorsOverrides));
 	}
 
@@ -33,15 +33,19 @@ namespace BromScript{
 		while (this->Members.Count > 0) {
 			delete this->Members.RemoveAt(0);
 		}
+
+		// we're already cleaning this up at the Instance::~Instance, so only cleanup if it's inherited member stuff
+		if (this->Statics != nullptr) {
+			delete this->Statics;
+		}
 	}
 
 	Userdata* Userdata::Copy() {
-		Userdata* ud = new Userdata();
+		Userdata* ud = new Userdata(this->BromScript);
 
 		ud->Name = this->Name;
 		ud->Offset = this->Offset;
 		ud->TypeID = this->TypeID;
-		ud->BromScript = this->BromScript;
 		ud->TypeSize = this->TypeSize;
 		ud->Getter = this->Getter;
 		ud->Setter = this->Setter;
@@ -55,7 +59,7 @@ namespace BromScript{
 		for (int i = 0; i < this->Functions.Count(); i++)
 			ud->Functions.Add(this->Functions.GetKeyByIndex(i), this->Functions.GetValueByIndex(i));
 
-		for (int i = 0; i < (int)Operators::Arithmetic_END - (int)Operators::Arithmetic_START - 1; i++)
+		for (int i = 0; i < sizeof(ud->OperatorsOverrides) / sizeof(BSFunction); i++)
 			ud->OperatorsOverrides[i] = this->OperatorsOverrides[i];
 
 		return ud;
@@ -78,7 +82,7 @@ namespace BromScript{
 			if (type > MemberType::Bool)
 				throw "Unknown type";
 
-			md = new Userdata();
+			md = new Userdata(this->BromScript);
 		}
 
 		md->BromScript = this->BromScript;
@@ -102,7 +106,7 @@ namespace BromScript{
 			if (type > MemberType::Bool)
 				throw "Unknown MemberType";
 
-			md = new Userdata();
+			md = new Userdata(this->BromScript);
 		}
 
 		md->BromScript = this->BromScript;
@@ -117,6 +121,25 @@ namespace BromScript{
 
 	void Userdata::RegisterFunction(CString name, BSFunction function) {
 		this->Functions.Add(name, function);
+	}
+
+	void Userdata::RegisterMemberStatic(CString name, Variable* var) {
+		this->Statics->Set(name, var);
+	}
+
+	void Userdata::RegisterFunctionStatic(CString name, BSFunction function, CString file, int linenumber) {
+		Function* varfunc = new Function(this->BromScript);
+		varfunc->CppFunc = function;
+		varfunc->Filename = file;
+		varfunc->IsCpp = true;
+		varfunc->Name = name;
+		varfunc->CurrentSourceFileLine = linenumber;
+
+		Variable* var = this->BromScript->GC.GetPooledVariable();
+		var->Type = VariableType::Function;
+		var->Value = varfunc;
+
+		this->Statics->Set(name, var);
 	}
 }
 

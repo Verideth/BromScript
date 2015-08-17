@@ -26,7 +26,7 @@
 namespace BromScript{
 	class Userdata {
 	public:
-		Userdata();
+		Userdata(Instance* bsi);
 		~Userdata();
 
 		int Offset;
@@ -39,6 +39,7 @@ namespace BromScript{
 
 		BSFunction OperatorsOverrides[(int)Operators::Arithmetic_END - (int)Operators::Arithmetic_START - 1]; // same amount as Misc::ArithmaticFuncs
 		List<Userdata*> Members;
+		Table* Statics;
 		Scratch::CDictionary<Scratch::CString, BSFunction> Functions;
 
 		Userdata* InheritFrom;
@@ -53,6 +54,9 @@ namespace BromScript{
 		void RegisterMember(Scratch::CString name, int offset, int type, BSSetFunction setter, BSGetFunction getter);
 		void RegisterFunction(Scratch::CString name, BSFunction function);
 		void RegisterOperator(Operators opcode, BSFunction function);
+
+		void RegisterFunctionStatic(Scratch::CString name, BSFunction function, Scratch::CString file = __FILE__, int linenumber = __LINE__);
+		void RegisterMemberStatic(Scratch::CString name, Variable* var);
 
 		Userdata* Copy();
 	};
