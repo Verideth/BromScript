@@ -237,6 +237,10 @@ namespace BromScript {
 			return ret;
 		}
 
+		Variable** oldlocals = this->FixedLocalVars;
+		this->FixedLocalVars = new Variable*[this->FixedLocalsCount];
+		memset(this->FixedLocalVars, 0, sizeof(Variable*) * this->FixedLocalsCount);
+
 		for (int i = 0; i < args->Count && i < this->Parameters.Count; i++) {
 			Variable* var = args->GetVariable(i);
 
@@ -283,6 +287,16 @@ namespace BromScript {
 		this->BromScript->LeaveStack();
 
 		this->CurrentSourceFileLine = oldline;
+
+		// cleanup current local scope
+		for (int i = 0; i < this->FixedLocalsCount; i++) {
+			if (this->FixedLocalVars[i] != nullptr) {
+				BS_REF_DECREESE(this->FixedLocalVars[i]);
+			}
+		}
+
+		delete this->FixedLocalVars;
+		this->FixedLocalVars = oldlocals;
 
 		delete data;
 		return ret;
