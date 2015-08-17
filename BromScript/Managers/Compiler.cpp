@@ -1388,6 +1388,7 @@ doreturn:
 			}
 		}
 
+		CString scopeendlabel = this->GetUniqueLabelName();
 		for (int i = 0; i < args.Count;) {
 			CString arg = args[i];
 			this->_WriteArgumentData(args, i);
@@ -1420,10 +1421,21 @@ doreturn:
 						this->ThrowError(CString::Format("Didn't expect a operator at the end of a statement! Statement is: '%s'", line.str_szBuffer));
 					}
 
+					if (opcode == Operators::ArithmeticOr) {
+						CString tmplbl = this->GetUniqueLabelName();
+
+						this->Writer.WriteOperator(Operators::Duplicate);
+						this->WriteJumpNT(tmplbl); // if not true, jump to right arg
+						this->WriteJump(scopeendlabel); // if true, jump to end of right arg
+						this->WriteLabel(tmplbl);
+					}
+
+					// righter argument
 					i++;
 					this->_WriteArgumentData(args, i);
 
-					this->Writer.WriteByte((byte)opcode);
+					if (opcode != Operators::ArithmeticOr) this->Writer.WriteByte((byte)opcode);
+
 
 					i++;
 				} else {
@@ -1431,6 +1443,7 @@ doreturn:
 				}
 			}
 		}
+		this->WriteLabel(scopeendlabel);
 	}
 
 	void Compiler::WriteCall(CString line) {
