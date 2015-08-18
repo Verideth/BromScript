@@ -226,6 +226,10 @@ namespace BromScript {
 		byte* buff = (byte*)fs.Read(filesize);
 		fs.Close();
 
+		if (filesize == 0) {
+			return this->GetDefaultVarNull();
+		}
+
 		if (filesize > 13) {
 			// \0 BROMSCRIPT \0 VERSION
 			bool iscompiled = true;
