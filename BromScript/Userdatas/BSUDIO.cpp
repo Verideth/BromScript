@@ -603,12 +603,12 @@ namespace BromScript {
 				vd->RegisterFunction("WriteBool", WriteBool);
 				vd->RegisterFunction("WriteByte", WriteByte);
 				vd->RegisterFunction("WriteShort", WriteShort);
-				vd->RegisterFunction("WriteShort", WriteUShort);
+				vd->RegisterFunction("WriteUShort", WriteUShort);
 				vd->RegisterFunction("WriteInt", WriteInt);
-				vd->RegisterFunction("WriteInt", WriteUInt);
+				vd->RegisterFunction("WriteUInt", WriteUInt);
 				vd->RegisterFunction("WriteFloat", WriteFloat);
 				vd->RegisterFunction("WriteLong", WriteLong);
-				vd->RegisterFunction("WriteLong", WriteULong);
+				vd->RegisterFunction("WriteULong", WriteULong);
 				vd->RegisterFunction("WriteDouble", WriteDouble);
 				vd->RegisterFunction("WriteString", WriteString);
 				vd->RegisterFunction("WriteNullString", WriteNullString);

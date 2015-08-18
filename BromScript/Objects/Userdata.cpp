@@ -120,6 +120,10 @@ namespace BromScript{
 	}
 
 	void Userdata::RegisterFunction(CString name, BSFunction function) {
+		if (this->Functions.HasKey(name)) {
+			throw "A function with this name already exists!";
+		}
+
 		this->Functions.Add(name, function);
 	}
 
