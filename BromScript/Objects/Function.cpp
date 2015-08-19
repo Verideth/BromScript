@@ -1,20 +1,20 @@
 /*
-	BromScript - On Runtime Scripting Language.
-	Copyright (C) 2012 - 2015  Alex Brouwer (Bromvlieg: http://brom.4o3.nl/)
+BromScript - On Runtime Scripting Language.
+Copyright (C) 2012 - 2015  Alex Brouwer (Bromvlieg: http://brom.4o3.nl/)
 
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-	*/
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "../Managers/Instance.h"
 #include "Function.h"
@@ -67,7 +67,7 @@ namespace BromScript {
 
 			delete[] this->FixedLocalVars;
 		}
-		
+
 		if (this->FixedLocalKeys != null) delete[] this->FixedLocalKeys;
 		if (this->FixedLocalIsRef != null) delete[] this->FixedLocalIsRef;
 		if (this->FixedLocalTypes != null) delete[] this->FixedLocalTypes;
@@ -237,9 +237,12 @@ namespace BromScript {
 			return ret;
 		}
 
-		Variable** oldlocals = this->FixedLocalVars;
-		this->FixedLocalVars = new Variable*[this->FixedLocalsCount];
-		memset(this->FixedLocalVars, 0, sizeof(Variable*) * this->FixedLocalsCount);
+		Variable** oldlocals = nullptr;
+		if (this->FixedLocalVars != nullptr) {
+			oldlocals = this->FixedLocalVars;
+			this->FixedLocalVars = new Variable*[this->FixedLocalsCount];
+			memset(this->FixedLocalVars, 0, sizeof(Variable*) * this->FixedLocalsCount);
+		}
 
 		for (int i = 0; i < args->Count && i < this->Parameters.Count; i++) {
 			Variable* var = args->GetVariable(i);
@@ -247,6 +250,10 @@ namespace BromScript {
 			if (this->FixedLocalTypes[i] != -1) {
 				if (var->Type != this->FixedLocalTypes[i]) {
 					BS_THROW_ERROR(this->BromScript, CString::Format("Expected type %s at argument %d, but got %s", (const char*)Converter::TypeToString(this->BromScript, (VariableType::Enum)this->FixedLocalTypes[i]), i + 1, (const char*)Converter::TypeToString(this->BromScript, var->Type)).str_szBuffer);
+
+					delete this->FixedLocalVars;
+					this->FixedLocalVars = oldlocals;
+
 					return this->BromScript->GetDefaultVarNull();
 				}
 			}
@@ -258,7 +265,7 @@ namespace BromScript {
 				if (var->Type == VariableType::Number) {
 					nvar->Value = this->BromScript->GC.NumberPool.GetNext();
 					*(double*)nvar->Value = *(double*)var->Value;
-				} else if (var->Type == VariableType::String){
+				} else if (var->Type == VariableType::String) {
 					nvar->Value = new CString((CString*)var->Value);
 				}
 
@@ -288,15 +295,17 @@ namespace BromScript {
 
 		this->CurrentSourceFileLine = oldline;
 
-		// cleanup current local scope
-		for (int i = 0; i < this->FixedLocalsCount; i++) {
-			if (this->FixedLocalVars[i] != nullptr) {
-				BS_REF_DECREESE(this->FixedLocalVars[i]);
+		if (oldlocals != nullptr) {
+			// cleanup current local scope
+			for (int i = 0; i < this->FixedLocalsCount; i++) {
+				if (this->FixedLocalVars[i] != nullptr) {
+					BS_REF_DECREESE(this->FixedLocalVars[i]);
+				}
 			}
-		}
 
-		delete this->FixedLocalVars;
-		this->FixedLocalVars = oldlocals;
+			delete this->FixedLocalVars;
+			this->FixedLocalVars = oldlocals;
+		}
 
 		delete data;
 		return ret;
@@ -322,7 +331,7 @@ namespace BromScript {
 				case Operators::Skip: break;
 				case Operators::Pop: Executer::Pop(data); break;
 				case Operators::Duplicate: Executer::Duplicate(data); break;
-					
+
 				case Operators::AddIndex: Executer::AddIndex(data); break;
 				case Operators::GetIndex: Executer::GetIndex(data); break;
 				case Operators::SetIndex: Executer::SetIndex(data); break;
@@ -353,7 +362,7 @@ namespace BromScript {
 				case Operators::Delete: Executer::Delete(data); break;
 
 
-				// these functions abort the execution, so put them here instead of in the Executer
+					// these functions abort the execution, so put them here instead of in the Executer
 				case Operators::Return:{
 					if (data->Reader->ReadBool()) {
 						return data->PopStack();
@@ -366,7 +375,7 @@ namespace BromScript {
 					return data->BromScript->GetDefaultVarNull();
 				}
 
-				// our special case
+					// our special case
 				default:
 					if (b > Operators::Arithmetic_START && b < Operators::Arithmetic_END) {
 						Variable* right = data->PopStack();
