@@ -24,10 +24,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "../Objects/BSEzSock.h"
 #include "../Objects/BSPacket.h"
 #include "../Scratch/CString.h"
-
 #include <sys/stat.h>
-#include <direct.h>
+
+#if LINUX
+// For memcpy()
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
+#define _mkdir(a) mkdir(a, 0700)
+#else
+#define _mkdir(a) mkdir(a)
 #include "../Libaries/dirent.h"
+#include <direct.h>
+#endif
 
 namespace BromScript {
 	namespace Userdatas {
@@ -505,7 +515,7 @@ namespace BromScript {
 
 			BS_FUNCTION(S_CreateDir) {
 				if (!args->CheckType(0, VariableType::String, true)) return nullptr;
-				return Converter::ToVariable(bsi, mkdir(args->GetString(0)) == 0);
+				return Converter::ToVariable(bsi, _mkdir(args->GetString(0)) == 0);
 			}
 
 			BS_FUNCTION(S_CreateFile) {

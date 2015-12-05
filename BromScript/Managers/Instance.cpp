@@ -434,7 +434,15 @@ namespace BromScript {
 		return null;
 	}
 
+	// use typeID 0 to make it automaticly get a typeID asigned to it
 	Userdata* Instance::RegisterUserdata(CString name, int typeID, int typesize, BSFunctionCtor ctor, BSFunctionDtor dtor) {
+		static int s_HighestID = 70000; // random high number to prevent collision with other types
+
+		// just use the next ID
+		if (typeID == 0) {
+			typeID = s_HighestID + 1;
+		}
+
 		if (typeID < 100 && !this->IncludingInternalUserdata)
 			throw "Cannot register Userdata with types below 100! (reserved for internal types)";
 
@@ -443,6 +451,10 @@ namespace BromScript {
 				CString str = CString::Format("Userdata typeID '%d' already registered under the name '%s'", typeID, this->RegisteredUserdataTypes[i]->Name.str_szBuffer);
 				throw str.str_szBuffer;
 			}
+		}
+
+		if (s_HighestID < typeID) {
+			s_HighestID = typeID;
 		}
 
 		Userdata* ud = new Userdata(this);

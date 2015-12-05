@@ -40,6 +40,8 @@ namespace BromScript{
 	}
 
 	Variable* Pool::GetNext() {
+		if (this->NextUnusedLink == null) return null;
+
 		PoolLink* curlink = this->NextUnusedLink;
 		Variable* ret = (Variable*)curlink->Data;
 		if (ret == null) return null;

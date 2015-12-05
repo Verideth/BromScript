@@ -303,7 +303,7 @@ namespace BromScript {
 				}
 			}
 
-			delete this->FixedLocalVars;
+			delete[] this->FixedLocalVars;
 			this->FixedLocalVars = oldlocals;
 		}
 

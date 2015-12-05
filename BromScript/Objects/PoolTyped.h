@@ -30,6 +30,7 @@ namespace BromScript{
 		PoolLink* NextUsedLink;
 
 		PoolTyped();
+		~PoolTyped();
 		PoolLink BufferLinks[BS_POOL_SIZE];
 
 		Type* GetNext();

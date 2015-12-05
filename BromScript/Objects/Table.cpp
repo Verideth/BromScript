@@ -75,28 +75,26 @@ namespace BromScript{
 		this->BromScript->GC.RegisterVariable(var);
 		BS_REF_INCREESE(var);
 
-		if (this->HasKey(key)) {
-			for (int i = 0; i < this->BufferSize; i++) {
-				if (this->Keys[i] != null && *this->Keys[i] == key) {
-					if (this->Values[i]->ReadOnly) {
-						BS_THROW_ERROR(this->BromScript, CString::Format("Cannot override '%s', it's read only!", key.str_szBuffer));
-						return;
-					}
-
-					BS_REF_DECREESE(this->Values[i]);
-					this->Values[i] = var;
+		for (int i = 0; i < this->BufferSize; i++) {
+			if (this->Keys[i] != null && *this->Keys[i] == key) {
+				if (this->Values[i]->ReadOnly) {
+					BS_THROW_ERROR(this->BromScript, CString::Format("Cannot override '%s', it's read only!", key.str_szBuffer));
 					return;
 				}
+
+				BS_REF_DECREESE(this->Values[i]);
+				this->Values[i] = var;
+				return;
 			}
-		} else {
-			for (int i = 0; i < this->BufferSize; i++) {
-				if (this->Values[i] == null) {
-					this->Keys[i] = new CString(key);
-					this->Values[i] = var;
+		}
 
-					this->Count++;
-					return;
-				}
+		for (int i = 0; i < this->BufferSize; i++) {
+			if (this->Values[i] == null) {
+				this->Keys[i] = new CString(key);
+				this->Values[i] = var;
+
+				this->Count++;
+				return;
 			}
 		}
 

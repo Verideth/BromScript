@@ -38,6 +38,14 @@ namespace BromScript{
 	}
 
 	template<class Type>
+	PoolTyped<Type>::~PoolTyped() {
+		// links
+		for (int i = 0; i < BS_POOL_SIZE; i++) {
+			delete this->BufferLinks[i].Data;
+		}
+	}
+
+	template<class Type>
 	Type* PoolTyped<Type>::GetNext() {
 		if (this->NextUnusedLink == null) return null;
 		PoolLink* curlink = this->NextUnusedLink;

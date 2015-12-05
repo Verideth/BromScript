@@ -341,7 +341,7 @@ namespace BromScript {
 			ret->Value = Converter::BoolToPointer(ret->Value == null);
 
 		if (ret->Type == VariableType::Null)
-			BS_THROW_ERROR(data->BromScript, CString::Format("Invalid arithmatic function!, trying to do %s %s %s", Converter::TypeToString(a).str_szBuffer, Converter::ArithmaticToString(af).str_szBuffer, Converter::TypeToString(b).str_szBuffer));
+			BS_THROW_ERROR(data->BromScript, CString::Format("Invalid arithmatic function!, trying to do %s(%s) %s %s(%s)", Converter::TypeToString(a).str_szBuffer, Converter::VariableToString(data->BromScript, a).str_szBuffer, Converter::ArithmaticToString(af).str_szBuffer, Converter::TypeToString(b).str_szBuffer, Converter::VariableToString(data->BromScript, b).str_szBuffer));
 
 		return ret;
 	}

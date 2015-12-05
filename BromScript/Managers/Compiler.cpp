@@ -1231,8 +1231,8 @@ doreturn:
 			char splitters[] = {'+', '-', '*', '%', '/', '>', '<', '|', '&'};
 
 			char ignoreopp[] = {' ', '(', ')'};
-			bool kakquiots = false, kakbrackets = false;
-			int kakietsanders = 0, kakbrackets2 = 0;
+			bool kakquiots = false;
+			int kakietsanders = 0, kakbrackets2 = 0, kakbrackets = 0;
 			int curpos = 0;
 			bool didop = false;
 			int linelen = line.Size();
@@ -1241,15 +1241,15 @@ doreturn:
 					kakquiots = !kakquiots;
 
 				if (!kakquiots) {
-					if (line[i] == '{') kakbrackets = true;
-					else if (line[i] == '}') kakbrackets = false;
+					if (line[i] == '{') kakbrackets++;
+					else if (line[i] == '}') kakbrackets--;
 					else if (line[i] == '[') kakbrackets2++;
 					else if (line[i] == ']') kakbrackets2--;
 					else if (line[i] == '(') kakietsanders++;
 					else if (line[i] == ')') kakietsanders--;
 				}
 
-				if (!kakquiots && !kakbrackets && kakietsanders == 0 && kakbrackets2 == 0) {
+				if (!kakquiots && kakbrackets == 0 && kakietsanders == 0 && kakbrackets2 == 0) {
 					if (i + 1 < linelen && (line[i] == '=' || line[i] == '!') && line[i + 1] == '=' && !didop) {
 						args.Add(line.Substring(curpos, i - curpos));
 						args.Add(line.Substring(i, 2));
@@ -1372,14 +1372,14 @@ doreturn:
 				}
 
 				bool notafunc = false;
-				if (args[i].StartsWith("(") && args[i] != "(") {
+				if (args[i].StartsWith("(") && args[i].Size() > 1) {
 					args.Set(i, args[i].Substring(1));
 					args.Insert(i, "(");
 					notafunc = true;
 					i++;
 				}
 
-				if (notafunc && args[i].EndsWith(')') && args[i] != ")") {
+				if (notafunc && args[i].EndsWith(')') && args[i].Size() > 1) {
 					args.Set(i, args[i].Substring(0, args[i].Size() - 1));
 					args.Insert(i + 1, ")");
 

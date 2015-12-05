@@ -34,6 +34,7 @@ namespace BromScript {
 		}
 
 		if (this->Reader != null) delete this->Reader;
+		if (this->Stack != nullptr) free(this->Stack);
 	}
 
 	void ExecuteData::AllocateMoreSpace(int num) {

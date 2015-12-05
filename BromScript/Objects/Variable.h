@@ -77,12 +77,16 @@ namespace BromScript {
 
 		void DecreeseRefCount(int line, Scratch::CString file) {
 			if (this->Using == 0) {
+				for (int i = 0; i < RefStackList.Count; i++) {
+					printf("%s\n", RefStackList[i].str_szBuffer);
+				}
+
 				throw "Fatal Variable reference count error, reference count below is -1";
 			}
 
-			char* padding = new char[this->Using + 1];
-			memset(padding, ' ', this->Using);
-			padding[this->Using] = 0;
+			char* padding = new char[this->Using];
+			memset(padding, ' ', this->Using - 1);
+			padding[this->Using - 1] = 0;
 
 			RefStackList.Add(Scratch::CString::Format("- %d %s%s:%d", this->Using - 1, padding, file.str_szBuffer, line));
 			delete[] padding;

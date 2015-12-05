@@ -24,13 +24,13 @@ namespace BromScript{
 	bool Converter::SetMember(Instance* bromscript, Variable* member, Variable* value, const CString &key) {
 		UserdataInstance* udi = (UserdataInstance*)member->Value;
 
-		if (udi->TypeData->Setter != null) {
+		if (udi->TypeData->Setter != nullptr) {
 			udi->TypeData->Setter(bromscript, udi->Ptr, value);
 			return true;
 		}
 
 		if (udi->TypeData->TypeID == MemberType::Bool && value->Type == VariableType::Bool) {
-			*(bool*)udi->Ptr = value->Value != null;
+			*(bool*)udi->Ptr = value->Value != nullptr;
 			return true;
 		} else if (udi->TypeData->TypeID == MemberType::Byte && value->Type == VariableType::Number) {
 			*(byte*)udi->Ptr = (byte)*(double*)value->Value;
@@ -61,9 +61,9 @@ namespace BromScript{
 	Variable* Converter::MemberToVariable(Instance* bromscript, Variable* member) {
 		UserdataInstance* udi = (UserdataInstance*)member->Value;
 
-		if (udi->TypeData->Getter != null) {
+		if (udi->TypeData->Getter != nullptr) {
 			Variable* ret = udi->TypeData->Getter(bromscript, udi->Ptr);
-			if (ret == null) ret = bromscript->GetDefaultVarNull();
+			if (ret == nullptr) ret = bromscript->GetDefaultVarNull();
 			else bromscript->GC.RegisterVariable(ret);
 
 			return ret;
@@ -114,7 +114,7 @@ namespace BromScript{
 
 	void* Converter::NumberToPointer(Instance* bromscript, double val) {
 		double* ret = bromscript->GC.NumberPool.GetNext();
-		if (ret == null) {
+		if (ret != nullptr) {
 			*ret = val;
 			return ret;
 		}
@@ -240,16 +240,20 @@ namespace BromScript{
 				break;
 
 			default:
-				Userdata* ud = ((UserdataInstance*)var->Value)->TypeData;
-				if (ud->OperatorsOverrides[(int)Operators::ArithmeticToString - (int)Operators::Arithmetic_START - 1] != null) {
+				UserdataInstance* udi = (UserdataInstance*)var->Value;
+				BSFunction opfunc = udi->GetOperator(Operators::ArithmeticToString);
+				if (opfunc != nullptr) {
 					ArgumentData args;
 					args.ThisObject = var;
 
-					Variable* ret = ud->OperatorsOverrides[(int)Operators::ArithmeticToString - (int)Operators::Arithmetic_START - 1](bromscript, &args);
-					if (ret == null) return "NULL";
+					BS_REF_INCREESE(var);
+					Variable* ret = opfunc(bromscript, &args);
+					BS_REF_DECREESE(var);
+
+					if (ret == nullptr) return "NULL";
 					else bromscript->GC.RegisterVariable(ret);
 
-					return *(CString*)ret->Value;
+					return ret->GetString();
 				}
 
 				return CString::Format("Class{%s}", ((UserdataInstance*)var->Value)->TypeData->Name.str_szBuffer);
@@ -291,7 +295,7 @@ namespace BromScript{
 	}
 
 	CString Converter::TypeToString(Variable* var) {
-		if (var == null) return "Null";
+		if (var == nullptr) return "Null";
 
 		switch (var->Type) {
 			case VariableType::Bool: return "Bool";

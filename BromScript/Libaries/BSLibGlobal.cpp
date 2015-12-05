@@ -76,7 +76,7 @@ namespace BromScript{
 					if (i > 0)
 						out += '\t';
 
-					out += Converter::VariableToString(args->GetVariable(i));
+					out += Converter::VariableToString(bsi, args->GetVariable(i));
 				}
 
 				out += "\n";

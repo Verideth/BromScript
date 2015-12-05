@@ -1,7 +1,7 @@
 INCLUDES		= -IBromScript/
 LIBS			= -Lbin -lm -L/usr/lib64 -lstdc++ -lpthread -ldl
 OPTIMIZEFLAG	= -O0
-CXXFLAGS		= -fpermissive -w -fPIC
+CXXFLAGS		= -fpermissive -w -fPIC -D LINUX
 
 sourcefiles_bromscript := $(shell find BromScript/ -name "*.cpp")
 objfiles_bromscript := $(patsubst %.cpp,%.o,$(sourcefiles_bromscript))

@@ -23,8 +23,8 @@ using namespace Scratch;
 
 namespace BromScript{
 	GarbageCollector::GarbageCollector() {
-		this->Pools = null;
-		this->Buffer = null;
+		this->Pools = nullptr;
+		this->Buffer = nullptr;
 
 		this->BufferSize = 0;
 		this->PoolsSize = 0;
@@ -38,7 +38,7 @@ namespace BromScript{
 	}
 
 	GarbageCollector::~GarbageCollector() {
-		if (this->Buffer == null) return;
+		if (this->Buffer == nullptr) return;
 		this->SelfDestruct();
 	}
 
@@ -51,11 +51,11 @@ namespace BromScript{
 			for (int i = 0; i < this->BufferSize; i++) {
 				Variable* var = this->Buffer[i];
 
-				if (var != null) {
+				if (var != nullptr) {
 					isdone = false;
 					vars.Add(var);
 					if (var->GetRefCount() == 0) {
-						this->Buffer[i] = null;
+						this->Buffer[i] = nullptr;
 
 						if (var->PoolRef.ID == -1) {
 							delete var;
@@ -71,9 +71,9 @@ namespace BromScript{
 						Function* func = var->GetFunction();
 
 						for (int i = 0; i < func->FixedLocalsCount; i++) {
-							if (func->FixedLocalVars[i] != null) {
+							if (func->FixedLocalVars[i] != nullptr) {
 								BS_REF_DECREESE(func->FixedLocalVars[i]);
-								func->FixedLocalVars[i] = null;
+								func->FixedLocalVars[i] = nullptr;
 							}
 						}
 					}
@@ -83,10 +83,15 @@ namespace BromScript{
 			continue;
 		}
 
+		for (int i = 0; i < this->PoolsSize; i++) {
+			delete this->Pools[i];
+		}
+
 		free(this->Buffer);
 		free(this->Pools);
-		this->Pools = null;
-		this->Buffer = null;
+
+		this->Pools = nullptr;
+		this->Buffer = nullptr;
 
 		this->BufferSize = 0;
 		this->PoolsSize = 0;
@@ -107,15 +112,15 @@ namespace BromScript{
 		int curc = 1337;
 		while (curc > 0) {
 			curc = 0;
-			for (int i = 0; i < this->PoolsSize; i++) {
+			for (int i = 0; i < this->BufferSize; i++) {
 				Variable* var = this->Buffer[i];
-				if (var != null && var->GetRefCount() == 0) {
+				if (var != nullptr && var->GetRefCount() == 0) {
 					curc++;
 
 					// number pooling, whooo
 					if (var->Type == VariableType::Number) {
 						this->NumberPool.Free((double*)var->Value);
-						var->Value = null;
+						var->Value = nullptr;
 					}
 
 					if (var->PoolRef.ID == -1) {
@@ -127,7 +132,7 @@ namespace BromScript{
 						p->Free(var);
 					}
 
-					this->Buffer[i] = null;
+					this->Buffer[i] = nullptr;
 					if (i < this->NullStart) this->NullStart = i;
 				}
 			}
@@ -147,11 +152,11 @@ namespace BromScript{
 		for (int i = 0; i < this->BufferSize; i++) {
 			Variable* var = this->Buffer[i];
 
-			if (var != null && var->GetRefCount() == 0) {
+			if (var != nullptr && var->GetRefCount() == 0) {
 				// number pooling, whooo
 				if (var->Type == VariableType::Number) {
 					this->NumberPool.Free((double*)var->Value);
-					var->Value = null;
+					var->Value = nullptr;
 				}
 
 				if (var->PoolRef.ID == -1) {
@@ -163,7 +168,7 @@ namespace BromScript{
 					p->Free(var);
 				}
 
-				this->Buffer[i] = null;
+				this->Buffer[i] = nullptr;
 				if (i < this->NullStart) this->NullStart = i;
 			}
 		}
@@ -172,12 +177,12 @@ namespace BromScript{
 	// use pooling
 	Variable* GarbageCollector::GetPooledVariable() {
 		Variable* ret = this->Pools[this->CurrentPool]->GetNext();
-		if (ret != null) return this->RegisterVariable(ret);
+		if (ret != nullptr) return this->RegisterVariable(ret);
 
 		// fallback
 		for (int i = 0; i < this->PoolsSize; i++) {
 			ret = this->Pools[this->CurrentPool]->GetNext();
-			if (ret != null) return this->RegisterVariable(ret);
+			if (ret != nullptr) return this->RegisterVariable(ret);
 		}
 
 		// fallback's fallback
@@ -195,7 +200,7 @@ namespace BromScript{
 
 		bool foundnext = false;
 		for (int i = this->NullStart + 1; i < this->BufferSize; i++) {
-			if (this->Buffer[i] == null) {
+			if (this->Buffer[i] == nullptr) {
 				this->NullStart = i;
 				foundnext = true;
 				break;
@@ -215,7 +220,7 @@ namespace BromScript{
 		this->BufferSize += 1024;
 		Variable** newbuff = (Variable**)malloc(sizeof(Variable*) * this->BufferSize);
 
-		if (this->Buffer != null) {
+		if (this->Buffer != nullptr) {
 			memcpy(newbuff, this->Buffer, sizeof(Variable*) * (this->BufferSize - 1024));
 			free(this->Buffer);
 		}
@@ -229,7 +234,7 @@ namespace BromScript{
 		this->PoolsSize++;
 		Pool** newbuff = (Pool**)malloc(sizeof(Pool*) * this->PoolsSize);
 
-		if (this->Pools != null) {
+		if (this->Pools != nullptr) {
 			memcpy(newbuff, this->Pools, sizeof(Pool*) * (this->PoolsSize - 1));
 			free(this->Pools);
 		}
