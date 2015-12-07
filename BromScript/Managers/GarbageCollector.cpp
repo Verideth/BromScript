@@ -33,6 +33,8 @@ namespace BromScript{
 
 		this->NullStart = 0;
 
+		this->BuffHighest = 0;
+
 		this->AllocateMoreSpace();
 		this->AllocateMorePools();
 	}
@@ -144,12 +146,11 @@ namespace BromScript{
 	}
 
 	void GarbageCollector::RunFrame() {
-		this->FrameSkip++;
 		if (this->FrameSkip < 512) return;
 
 		this->FrameSkip = 0;
 
-		for (int i = 0; i < this->BufferSize; i++) {
+		for (int i = 0; i < this->BuffHighest + 1; i++) {
 			Variable* var = this->Buffer[i];
 
 			if (var != nullptr && var->GetRefCount() == 0) {
@@ -170,6 +171,7 @@ namespace BromScript{
 
 				this->Buffer[i] = nullptr;
 				if (i < this->NullStart) this->NullStart = i;
+				if (i == this->BuffHighest) while (this->Buffer[--this->BuffHighest] == nullptr) { };
 			}
 		}
 	}
@@ -197,6 +199,8 @@ namespace BromScript{
 
 		var->RegisteredInGC = true;
 		this->Buffer[this->NullStart] = var;
+
+		if (this->NullStart > this->BuffHighest) this->BuffHighest = this->NullStart;
 
 		bool foundnext = false;
 		for (int i = this->NullStart + 1; i < this->BufferSize; i++) {

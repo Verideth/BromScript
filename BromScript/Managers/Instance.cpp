@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace Scratch;
 
 namespace BromScript {
-	Instance::Instance() :CurrentIncludePath(""), CurrentStackIndex(0), Globals(new Table(this)), KillScriptThreaded(false), Debug(new Debugger(this)), ErrorCallback(null), IncludingInternalUserdata(false) {
+	Instance::Instance() :CurrentIncludePath(""), CurrentStackIndex(0), Globals(new Table(this)), KillScriptThreaded(false), Debug(new Debugger(this)), ErrorCallback(nullptr), IncludingInternalUserdata(false) {
 		this->_Default_Var_Null = this->GC.GetPooledVariable();
 		this->_Default_Var_True = this->GC.RegisterVariable(Converter::ToVariable(this, true));
 		this->_Default_Var_False = this->GC.RegisterVariable(Converter::ToVariable(this, false));
@@ -47,9 +47,9 @@ namespace BromScript {
 		while (this->ChunkScopes.Count > 0) {
 			Function* rootfunc = this->ChunkScopes.RemoveAt(0);
 
-			if (rootfunc->StringTable != null) delete[] rootfunc->StringTable;
+			if (rootfunc->StringTable != nullptr) delete[] rootfunc->StringTable;
 
-			if (rootfunc->StringTableVars != null) {
+			if (rootfunc->StringTableVars != nullptr) {
 				for (int i = 0; i < rootfunc->StringTableCount; i++) {
 					BS_REF_DECREESE(rootfunc->StringTableVars[i]);
 				}
@@ -83,8 +83,8 @@ namespace BromScript {
 		delete this->Debug;
 	}
 
-	void Instance::SetVar(CString key, Variable* var) {
-		if (var == null || var->Type == VariableType::Null) {
+	void Instance::SetVar(const Scratch::CString& key, Variable* var) {
+		if (var == nullptr || var->Type == VariableType::Null) {
 			this->Globals->Remove(key);
 			return;
 		}
@@ -92,18 +92,18 @@ namespace BromScript {
 		this->Globals->Set(key, var);
 	}
 
-	void Instance::RemoveVar(CString key) {
+	void Instance::RemoveVar(const Scratch::CString& key) {
 		this->Globals->Remove(key);
 	}
 
-	Variable* Instance::GetVar(CString key) {
+	Variable* Instance::GetVar(const Scratch::CString& key) {
 		return this->Globals->Get(key);
 	}
 
 	Variable* Instance::DoString(const char* codename, const char* code) {
 		int i = 0;
 		while (true) {
-			if (code[i] == null) {
+			if (code[i] == 0) {
 				return this->DoString(codename, code, i);
 			}
 
@@ -152,19 +152,19 @@ namespace BromScript {
 			file = this->CurrentIncludePath + filename;
 
 		HINSTANCE dll = LoadLibrary(file);
-		if (dll == null) {
+		if (dll == nullptr) {
 			BS_THROW_ERROR(this, CString::Format("Could not find module '%s'", file.str_szBuffer));
 			return;
 		}
 
 		BSModuleFunction init = (BSModuleFunction)GetProcAddress(dll, "BromScriptStart");
 		BSModuleFunction deinit = (BSModuleFunction)GetProcAddress(dll, "BromScriptShutdown");
-		if (init == null) {
+		if (init == nullptr) {
 			BS_THROW_ERROR(this, CString::Format("Could not find entry point ('BromScriptStart') in module '%s'", file.str_szBuffer));
 			return;
 		}
 
-		if (deinit == null) {
+		if (deinit == nullptr) {
 			BS_THROW_ERROR(this, CString::Format("Could not find exit point ('BromScriptShutdown') in module '%s'", file.str_szBuffer));
 			return;
 		}
@@ -179,7 +179,7 @@ namespace BromScript {
 			file = this->CurrentIncludePath + filename;
 
 		void* sohandle = dlopen(file, RTLD_LAZY);
-		if (sohandle == null){
+		if (sohandle == nullptr){
 			BS_THROW_ERROR(this, CString::Format("Could not find module '%s'", file.str_szBuffer));
 			return;
 		}
@@ -187,12 +187,12 @@ namespace BromScript {
 		BSModuleFunction init = (BSModuleFunction)dlsym(sohandle, "BromScriptStart");
 		BSModuleFunction deinit = (BSModuleFunction)dlsym(sohandle, "BromScriptShutdown");
 
-		if (init == null){
+		if (init == nullptr){
 			BS_THROW_ERROR(this, CString::Format("Could not find entry point ('BromScriptStart') in module '%s'", file.str_szBuffer));
 			return;
 		}
 
-		if (deinit == null){
+		if (deinit == nullptr){
 			BS_THROW_ERROR(this, CString::Format("Could not find exit point ('BromScriptShutdown') in module '%s'", file.str_szBuffer));
 			return;
 		}
@@ -316,7 +316,7 @@ namespace BromScript {
 	}
 
 	Function* Instance::GetCurrentFunction() {
-		if (this->CurrentStackIndex == 0) return null;
+		if (this->CurrentStackIndex == 0) return nullptr;
 		return this->CurrentStack[this->CurrentStackIndex - 1].Func;
 	}
 
@@ -328,11 +328,11 @@ namespace BromScript {
 		return stack;
 	}
 
-	void Instance::Error(CString msg) {
-		this->Error(msg, -1, null);
+	void Instance::Error(const Scratch::CString& msg) {
+		this->Error(msg, -1, nullptr);
 	}
 
-	void Instance::Error(CString msg, int linenumber, const char* file) {
+	void Instance::Error(const Scratch::CString& msg, int linenumber, const char* file) {
 		CallStack* stack = new CallStack[this->CurrentStackIndex];
 		int lastiserror = false;
 		for (int i = 0; i < this->CurrentStackIndex; i++) {
@@ -364,7 +364,7 @@ namespace BromScript {
 			this->Debug->Error(this->CurrentStack, this->CurrentStackIndex, msg);
 		}
 
-		if (this->ErrorCallback != null) {
+		if (this->ErrorCallback != nullptr) {
 			this->ErrorCallback(this, this->CurrentStack, this->CurrentStackIndex - (lastiserror ? 1 : 0), msg);
 		}
 
@@ -383,7 +383,7 @@ namespace BromScript {
 		return this->ErrorCallback;
 	}
 
-	void Instance::RegisterFunction(CString key, BSFunction func, int linenumber, const char* file) {
+	void Instance::RegisterFunction(const Scratch::CString& key, BSFunction func, int linenumber, const char* file) {
 		Function* varfunc = new Function(this);
 		varfunc->CppFunc = func;
 		varfunc->Filename = file;
@@ -400,7 +400,7 @@ namespace BromScript {
 
 	Variable* Instance::CreateUserdata(int typeID, void* ptr, bool calldtor) {
 		Userdata* ud = this->GetRegisteredUserdata(typeID);
-		if (ud == null)
+		if (ud == nullptr)
 			throw "Unknown Userdata type!";
 
 		UserdataInstance* udi = new UserdataInstance();
@@ -414,6 +414,22 @@ namespace BromScript {
 		return var;
 	}
 
+	Variable* Instance::CreateUserdata(const Scratch::CString& name, void* ptr, bool calldtor) {
+		Userdata* ud = this->GetRegisteredUserdata(name);
+		if (ud == nullptr)
+			throw "Unknown Userdata type!";
+
+		UserdataInstance* udi = new UserdataInstance();
+		udi->TypeData = ud;
+		udi->Ptr = ptr;
+
+		Variable* var = new Variable();
+		var->Value = udi;
+		var->Type = (VariableType::Enum)ud->TypeID;
+
+		return var;
+	}
+
 	Userdata* Instance::GetRegisteredUserdata(int typeID) {
 		for (int i = 0; i < this->RegisteredUserdataTypes.Count; i++) {
 			if (this->RegisteredUserdataTypes[i]->TypeID == typeID) {
@@ -421,21 +437,21 @@ namespace BromScript {
 			}
 		}
 
-		return null;
+		return nullptr;
 	}
 
-	Userdata* Instance::GetRegisteredUserdata(CString name) {
+	Userdata* Instance::GetRegisteredUserdata(const Scratch::CString& name) {
 		for (int i = 0; i < this->RegisteredUserdataTypes.Count; i++) {
 			if (this->RegisteredUserdataTypes[i]->Name == name) {
 				return this->RegisteredUserdataTypes[i];
 			}
 		}
 
-		return null;
+		return nullptr;
 	}
 
 	// use typeID 0 to make it automaticly get a typeID asigned to it
-	Userdata* Instance::RegisterUserdata(CString name, int typeID, int typesize, BSFunctionCtor ctor, BSFunctionDtor dtor) {
+	Userdata* Instance::RegisterUserdata(const Scratch::CString& name, int typeID, int typesize, BSFunctionCtor ctor, BSFunctionDtor dtor) {
 		static int s_HighestID = 70000; // random high number to prevent collision with other types
 
 		// just use the next ID

@@ -24,7 +24,7 @@
 
 namespace BromScript{
 	namespace Userdatas{
-		namespace Packet{
+		namespace Packet {
 			void RegisterUD(BromScript::Instance* bsi);
 		}
 	}

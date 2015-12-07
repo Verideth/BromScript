@@ -63,22 +63,24 @@ namespace BromScript {
 		void EnterStack(Function* func);
 		void LeaveStack();
 
-		void Error(Scratch::CString msg);
-		void Error(Scratch::CString msg, int linenumber, const char* file);
+		void Error(const Scratch::CString& msg);
+		void Error(const Scratch::CString& msg, int linenumber, const char* file);
 
 		void SetErrorCallback(ErrorFunction func);
 		ErrorFunction GetErrorCallback();
-		void RegisterFunction(Scratch::CString key, BSFunction func, int linenumber = -1, const char* file = "c++");
+		void RegisterFunction(const Scratch::CString& key, BSFunction func, int linenumber = -1, const char* file = "c++");
 		void RegisterScope(Function* scope);
 
 		Userdata* GetRegisteredUserdata(int typeID);
-		Userdata* GetRegisteredUserdata(Scratch::CString name);
-		Userdata* RegisterUserdata(Scratch::CString name, int typeID, int typesize, BSFunctionCtor ctor, BSFunctionDtor dtor);
-		Variable* CreateUserdata(int typeID, void* ptr, bool calldtor);
+		Userdata* GetRegisteredUserdata(const Scratch::CString& name);
+		Userdata* RegisterUserdata(const Scratch::CString& name, int typeID, int typesize, BSFunctionCtor ctor, BSFunctionDtor dtor);
 
-		void RemoveVar(Scratch::CString key);
-		void SetVar(Scratch::CString key, Variable* var);
-		Variable* GetVar(Scratch::CString key);
+		Variable* CreateUserdata(int typeID, void* ptr, bool calldtor);
+		Variable* CreateUserdata(const Scratch::CString& name, void* ptr, bool calldtor);
+
+		void RemoveVar(const Scratch::CString& key);
+		void SetVar(const Scratch::CString& key, Variable* var);
+		Variable* GetVar(const Scratch::CString& key);
 
 		Function* GetCurrentFunction();
 		CallStack* GetCurrentStack();

@@ -177,7 +177,7 @@ namespace BromScript{
 				if (!args->CheckType(0, VariableType::String, true))return null;
 
 				BromScript::Packet* p = (BromScript::Packet*)args->GetThisObjectData();
-				if (args->CheckType(1, VariableType::Bool) && args->GetBool(1)) {
+				if (args->CheckType(1, VariableType::Bool, false) && args->GetBool(1)) {
 					Scratch::CString str = args->GetString(0);
 					p->WriteBytes((unsigned char*)str.str_szBuffer, str.Size() + 1, false);
 				} else
@@ -207,7 +207,7 @@ namespace BromScript{
 			}
 
 			void RegisterUD(BromScript::Instance* bsi) {
-				Userdata* vd = bsi->RegisterUserdata("Packet", BROMSCRIPT_USERDATA_PACKET_TYPE, sizeof(EzSock), CTOR, DTOR);
+				Userdata* vd = bsi->RegisterUserdata("Packet", BROMSCRIPT_USERDATA_PACKET_TYPE, sizeof(BromScript::Packet), CTOR, DTOR);
 
 				vd->RegisterFunction("ReadBool", ReadBool);
 				vd->RegisterFunction("ReadByte", ReadByte);

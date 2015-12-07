@@ -129,7 +129,6 @@ namespace BromScript {
 			if (a->Type > VariableType::Userdata) udi = (UserdataInstance*)a->Value;
 			else udi = (UserdataInstance*)b->Value;
 
-
 			BSFunction opfunc = udi->GetOperator(af);
 			if (opfunc != nullptr) {
 				ArgumentData args;
@@ -142,11 +141,7 @@ namespace BromScript {
 				else data->BromScript->GC.RegisterVariable(ret);
 
 				return ret;
-			} else {
-				BS_THROW_ERROR(data->BromScript, CString::Format("Invalid arithmatic function!, trying to do %s %s %s", Converter::TypeToString(a).str_szBuffer, Converter::ArithmaticToString(af).str_szBuffer, Converter::TypeToString(b).str_szBuffer));
-				return data->BromScript->GetDefaultVarNull();
 			}
-			
 		}
 
 		// TODO: remove this old class/table system

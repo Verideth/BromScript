@@ -46,6 +46,7 @@ namespace BromScript{
 		Pool** Pools;
 		int PoolsSize;
 		int CurrentPool;
+		int BuffHighest;
 
 		Variable** Buffer;
 		int BufferSize;

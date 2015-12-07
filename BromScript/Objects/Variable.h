@@ -58,9 +58,6 @@ namespace BromScript {
 		BromScript::Function* GetFunction();
 		BromScript::Table* GetTable();
 
-		inline void IncreeseRefCount() { this->Using++; }
-		inline void DecreeseRefCount() { this->Using--; }
-
 #ifdef BS_DEBUG_REFCOUNT
 		List<Scratch::CString> RefStackList;
 
@@ -93,6 +90,9 @@ namespace BromScript {
 
 			this->Using--;
 		}
+#else
+		inline void IncreeseRefCount() { this->Using++; }
+		inline void DecreeseRefCount() { this->Using--; }
 #endif
 
 		inline int GetRefCount() { return this->Using; }

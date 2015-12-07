@@ -177,7 +177,7 @@ namespace BromScript{
 
 	bool Packet::CanRead(int numofbytes) {
 		bool res = this->InSize - this->InPos >= (unsigned int)(numofbytes);
-		if (res == false && this->Sock != null) {
+		if (res == false && this->Sock != nullptr) {
 			unsigned char* tmp = new unsigned char[numofbytes];
 			int recamount = 0;
 			while (recamount != numofbytes) {
