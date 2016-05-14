@@ -43,7 +43,13 @@ namespace BromScript {
 	namespace Userdatas {
 		namespace IO {
 			BS_FUNCTION_CTOR(CTOR) {
-				return new Scratch::CFileStream();
+				Scratch::CFileStream* fs = new Scratch::CFileStream();
+
+				if (args->CheckType(0, VariableType::String) && args->CheckType(1, VariableType::String)) {
+					fs->Open(args->GetString(0), args->GetString(1));
+				}
+
+				return fs;
 			}
 
 			BS_FUNCTION_DTOR(DTOR) {
@@ -282,11 +288,13 @@ namespace BromScript {
 
 			BS_FUNCTION(ReadLine) {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_IO_TYPE, true)) return nullptr;
+				FILE* fs = ((Scratch::CFileStream*)args->GetThisObjectData())->fs_pfh;
+				if (fs == nullptr) return bsi->GetDefaultVarNull();
 
 				std::string str;
 				while (true) {
 					char c;
-					fread(&c, 1, sizeof(c), ((Scratch::CFileStream*)args->GetThisObjectData())->fs_pfh);
+					fread(&c, 1, sizeof(c), fs);
 
 					if (c == '\n') break;
 					str += c;
@@ -403,10 +411,10 @@ namespace BromScript {
 				Scratch::CFileStream* fs = (Scratch::CFileStream*)args->GetThisObjectData();
 
 				const char* str = args->GetString(0);
-				char obj[2]{'\r', '\n'};
+				const char* obj = "\r\n";
 
 				fwrite(str, 1, strlen(str), fs->fs_pfh);
-				fwrite(&obj, 1, sizeof(obj), fs->fs_pfh);
+				fwrite(obj, 1, strlen(obj), fs->fs_pfh);
 
 				return nullptr;
 			}

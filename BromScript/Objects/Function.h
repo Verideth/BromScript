@@ -30,6 +30,8 @@
 #include "../Objects/Table.h"
 
 namespace BromScript {
+	class Environment;
+
 	class Function {
 	public:
 		Function(Instance* bromscript);
@@ -44,6 +46,8 @@ namespace BromScript {
 		Variable* InternalRun(ExecuteData* data);
 
 		void SetReferences(Function* func, int entrypoint);
+		void SetEnv(Environment* env);
+		Environment* GetEnv();
 
 		void SetVar(Variable* var, int localindex);
 		void SetVar(Scratch::CString key, Variable* var, bool global);
@@ -57,6 +61,7 @@ namespace BromScript {
 
 		Instance* BromScript;
 		Function* Parent;
+		Environment* Env;
 		List<Scratch::CString> Parameters;
 
 		int StringTableCount;

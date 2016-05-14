@@ -201,7 +201,7 @@ bool Packet::CanRead(int numofbytes){
 
 		this->CheckSpaceIn(numofbytes);
 		memcpy(this->InBuffer + this->InPos, tmp, numofbytes);
-		delete tmp;
+		delete[] tmp;
 
 		return true;
 	}

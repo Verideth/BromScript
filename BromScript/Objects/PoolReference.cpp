@@ -19,5 +19,8 @@
 #include "PoolReference.h"
 
 namespace BromScript{
-
+	PoolReference::PoolReference() {
+		this->ID = -1;
+		this->Index = -1;
+	}
 }

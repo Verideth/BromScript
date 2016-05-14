@@ -21,8 +21,10 @@
 
 namespace BromScript{
 	struct PoolReference {
-		int ID = -1;
-		int Index = -1;
+		PoolReference();
+
+		int ID;
+		int Index;
 	};
 }
 

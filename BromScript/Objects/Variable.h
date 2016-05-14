@@ -55,8 +55,9 @@ namespace BromScript {
 		Scratch::CString ToString(Instance* bsi);
 		bool GetBool();
 		void* GetUserdata();
-		BromScript::Function* GetFunction();
-		BromScript::Table* GetTable();
+		Userdata* GetUserdataType();
+		Function* GetFunction();
+		Table* GetTable();
 
 #ifdef BS_DEBUG_REFCOUNT
 		List<Scratch::CString> RefStackList;

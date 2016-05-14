@@ -83,16 +83,20 @@ namespace BromScript {
 	}
 
 	void* Variable::GetUserdata() {
-		return ((BromScript::UserdataInstance*)(this->Value))->Ptr;
+		return ((UserdataInstance*)(this->Value))->Ptr;
+	}
+
+	Userdata* Variable::GetUserdataType() {
+		return ((UserdataInstance*)(this->Value))->TypeData;
 	}
 
 	Table* Variable::GetTable() {
 		if (this->Type != VariableType::Table) return null;
-		return (BromScript::Table*)this->Value;
+		return (Table*)this->Value;
 	}
 
 	Function* Variable::GetFunction() {
 		if (this->Type != VariableType::Function) return null;
-		return (BromScript::Function*)this->Value;
+		return (Function*)this->Value;
 	}
 }

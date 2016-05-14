@@ -20,6 +20,7 @@
 #include "BSLibString.h"
 #include "../Objects/ArgumentData.h"
 #include "../Objects/Variable.h"
+#include "../Userdatas/BSUDArray.h"
 
 using namespace Scratch;
 
@@ -55,11 +56,47 @@ namespace BromScript{
 				CStackArray<CString> arr;
 				CString(args->GetString(0)).Split(args->GetString(1), arr);
 
-				Table* tbl = new Table(args->BromScript);
-				for (int i = 0; i < arr.Count(); i++)
-					tbl->Set(CString((double)i), Converter::ToVariable(bsi, arr[i]));
+				Userdatas::Array::CArray* ret = new Userdatas::Array::CArray();
 
-				return Converter::ToVariable(bsi, tbl);
+				for (int i = 0; i < arr.Count(); i++) {
+					ret->Add(Converter::ToVariable(bsi, arr[i]));
+				}
+
+				return bsi->CreateUserdata(BROMSCRIPT_USERDATA_ARRAY_TYPE, ret, true);
+			}
+
+			BS_FUNCTION(Merge) {
+				CString ret;
+
+				if (!args->CheckType(1, VariableType::String, true)) return null;
+
+				if (args->CheckType(0, VariableType::Table)) {
+					Table* tbl = args->GetTable(0);
+
+					int curi = 0;
+					CString seperator = args->GetString(1);
+					
+					while (curi > -1) {
+						ret += tbl->GetByIndex(curi)->ToString(bsi);
+
+						curi = tbl->GetNextIndex(curi + 1);
+						if (tbl->GetNextIndex(curi) > -1) ret += seperator;
+					}
+				} else if (args->CheckType(0, BROMSCRIPT_USERDATA_ARRAY_TYPE)) {
+					Userdatas::Array::CArray* tbl = (Userdatas::Array::CArray*)args->GetUserdata(0, BROMSCRIPT_USERDATA_ARRAY_TYPE);
+
+					CString seperator = args->GetString(1);
+
+					for (int i = 0; i < tbl->Vars.Count; i++) {
+						ret += tbl->Vars[i]->ToString(bsi);
+
+						if (i + 1 < tbl->Vars.Count) ret += seperator;
+					}
+				} else {
+					args->Error("Cannot merge given type");
+				}
+
+				return bsi->ToVariable(ret);
 			}
 
 			BS_FUNCTION(Sub) {

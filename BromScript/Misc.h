@@ -34,38 +34,50 @@ namespace BromScript {
 		};
 	};
 
-	enum class Operators {
-		EndScope,
+// compatibility for lower than C11, will generate warnings tho, so fix your compiler setup.
+#if __cplusplus <= 199711L
+	namespace Operators{
+		enum Operators {
+#else
+		enum class Operators {
+#endif
+			EndScope,
 
-		Set, SetL,
-		Get, GetL,
-		Call, CallThis,
-		GetIndex, SetIndex,
-		AddIndex, New,
-		GetCount,
+			Set, SetL,
+			Get, GetL,
+			Call, CallThis,
+			GetIndex, SetIndex,
+			AddIndex, New,
+			GetCount,
 
-		Jump, JumpNT,
-		Return, Delete,
+			Jump, JumpNT,
+			Return, Delete,
 
-		StackNumber,
-		StackString,
-		StackTable,
-		StackBool,
-		StackNull,
-		StackFunction,
-		Pop, Duplicate,
+			StackNumber,
+			StackString,
+			StackTable,
+			StackBool,
+			StackNull,
+			StackFunction,
+			Pop, Duplicate,
 
-		PreIncrement, PostIncrement,
-		PreDecrement, PostDecrement,
+			PreIncrement, PostIncrement,
+			PreDecrement, PostDecrement,
 
-		Arithmetic_START, ArithmeticAdd, ArithmeticSubstract, ArithmeticDivide, ArithmeticMultiply, ArithmeticAnd, ArithmeticOr,
-		ArithmeticGreaterThan, ArithmeticLessThan, ArithmeticGreaterOrEqual, ArithmeticLessOrEqual, ArithmeticEqual,
-		ArithmeticNotEqual, ArithmeticBitwiseLeft, ArithmeticBitwiseRight, ArithmeticBitwiseOr, ArithmeticBitwiseAnd,
-		ArithmeticModulo, ArithmeticCall, ArithmeticGetIndex, ArithmeticSetIndex, ArithmeticGetCount, ArithmeticToString,
-		Arithmetic_END,
+			Arithmetic_START, ArithmeticAdd, ArithmeticSubstract, ArithmeticDivide, ArithmeticMultiply, ArithmeticAnd, ArithmeticOr,
+			ArithmeticGreaterThan, ArithmeticLessThan, ArithmeticGreaterOrEqual, ArithmeticLessOrEqual, ArithmeticEqual,
+			ArithmeticNotEqual, ArithmeticBitwiseLeft, ArithmeticBitwiseRight, ArithmeticBitwiseOr, ArithmeticBitwiseAnd,
+			ArithmeticModulo, ArithmeticCall, ArithmeticGetIndex, ArithmeticSetIndex, ArithmeticGetCount, ArithmeticToString,
+			Arithmetic_END,
 
-		GlobalLocals = 157, StringTable = 253, CurrentLine = 254, Skip = 255
-	};
+			GlobalLocals = 157, StringTable = 253, CurrentLine = 254, Skip = 255
+		};
+	}
+#if __cplusplus <= 199711L
 }
+
+#pragma warning(disable : 4482)
+#define Operators Operators::Operators
+#endif
 
 #endif

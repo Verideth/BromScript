@@ -89,6 +89,11 @@ namespace BromScript{
 				return Converter::ToVariable(bsi, Converter::VariableToString(bsi, args->GetVariable(0)));
 			}
 
+			BS_FUNCTION(ToNumber) {
+				if (args->Count != 1) { BS_THROW_ERROR(args, "Expected variable, got nothing!"); return null; }
+				return bsi->ToVariable(atof(args->GetVariable(0)->ToString(bsi)));
+			}
+
 			BS_FUNCTION(TypeOf) {
 				if (args->Count != 1) { BS_THROW_ERROR(args, "Expected variable, got nothing!"); return null; }
 				return Converter::ToVariable(bsi, Converter::TypeToString(args->GetVariable(0)));
@@ -106,8 +111,7 @@ namespace BromScript{
 			BS_FUNCTION(Include) {
 				if (!args->CheckType(0, VariableType::String, true)) return null;
 
-				bsi->DoFile(args->GetString(0));
-				return null;
+				return bsi->DoFile(args->GetString(0), args->Caller->Env, args->CheckType(1, VariableType::Bool, false) ? args->GetBool(1) : true);
 			}
 
 #ifdef _MSC_VER

@@ -32,5 +32,6 @@
 #include "Userdatas/BSUDInterop.h"
 #include "Userdatas/BSUDInteropMethod.h"
 #include "Userdatas/BSUDRawData.h"
+#include "Userdatas/BSUDArray.h"
 
 #endif

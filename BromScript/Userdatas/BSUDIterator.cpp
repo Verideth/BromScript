@@ -26,10 +26,11 @@ namespace BromScript {
 		namespace Iterator {
 			class IteratorClass {
 			public:
-				int CurrentIndex = 0;
+				int CurrentIndex;
 				Variable* Object;
+				Variable* UDIndex;
 
-				IteratorClass(Variable* obj) :Object(obj) { }
+				IteratorClass(Variable* obj) :CurrentIndex(0), UDIndex(nullptr), Object(obj) {}
 			};
 
 			BS_FUNCTION_CTOR(CTOR) {
@@ -52,12 +53,15 @@ namespace BromScript {
 
 				if (iter->Object->Type >= VariableType::Userdata) {
 					UserdataInstance* udi = (UserdataInstance*)iter->Object->Value;
-					Variable* nextkeyvar = udi->GetMethod("NextKey");
-					if (nextkeyvar != null) {
+					Variable* nextkeyvar = udi->GetMethod("GetNextIndex");
+					BSFunction getindexfunc = udi->GetOperator(Operators::ArithmeticGetIndex);
+					if (nextkeyvar != null && getindexfunc != nullptr) {
 						ArgumentData args;
 						args.BromScript = bsi;
 						args.Caller = bsi->GetCurrentFunction();
 						args.SetThisObject(iter->Object);
+						args.AddVariable(iter->UDIndex == nullptr ? bsi->GetDefaultVarNull() : iter->UDIndex);
+						nextkeyvar->GetFunction()->CurrentThisObject = iter->Object;
 
 						Variable* ret = nextkeyvar->GetFunction()->Run(&args);
 						args.Clear();
@@ -65,7 +69,16 @@ namespace BromScript {
 						if (ret == null) ret = bsi->GetDefaultVarNull();
 						else bsi->GC.RegisterVariable(ret);
 
-						return ret;
+						if (ret->Type == VariableType::Null) return bsi->GetDefaultVarNull();
+						iter->UDIndex = ret;
+
+						args.BromScript = bsi;
+						args.Caller = bsi->GetCurrentFunction();
+						args.SetThisObject(iter->Object);
+						args.AddVariable(iter->UDIndex);
+
+						nextkeyvar->GetFunction()->CurrentThisObject = nullptr;
+						return getindexfunc(bsi, &args);
 					}
 
 					BS_THROW_ERROR(bsi, Scratch::CString::Format("Cannot iterate an '%s'", Converter::TypeToString(bsi, iter->Object->Type).str_szBuffer));
@@ -76,20 +89,31 @@ namespace BromScript {
 
 			BS_FUNCTION(GetIndex) {
 				IteratorClass* iter = (IteratorClass*)args->GetThisObjectData();
-				return iter->Object->GetTable()->Get(args->GetVariable(0)->ToString());
-			}
 
-			BS_FUNCTION(Reset) {
-				((IteratorClass*)args->GetThisObjectData())->CurrentIndex = 0;
-				return null;
+				if (iter->Object->Type == VariableType::Table) {
+					return iter->Object->GetTable()->Get(args->GetVariable(0)->ToString());
+				}
+
+				if (iter->Object->Type >= VariableType::Userdata) {
+					UserdataInstance* udi = (UserdataInstance*)iter->Object->Value;
+					BSFunction getindexfunc = udi->GetOperator(Operators::ArithmeticGetIndex);
+
+					ArgumentData args2;
+					args2.BromScript = bsi;
+					args2.Caller = bsi->GetCurrentFunction();
+					args2.SetThisObject(iter->Object);
+					args2.AddVariable(args->GetVariable(0));
+
+					return getindexfunc(bsi, &args2);
+				}
+
+				BS_THROW_ERROR(bsi, Scratch::CString::Format("Cannot GetIndex an '%s'", Converter::TypeToString(bsi, iter->Object->Type).str_szBuffer));
 			}
 
 			void RegisterUD(BromScript::Instance* bsi) {
 				Userdata* vd = bsi->RegisterUserdata("Iterator", BROMSCRIPT_USERDATA_ITERATOR_TYPE, sizeof(IteratorClass), CTOR, DTOR);
 
 				vd->RegisterFunction("NextKey", NextKey);
-				vd->RegisterFunction("GetIndex", GetIndex);
-				vd->RegisterFunction("Reset", Reset);
 
 				vd->RegisterOperator(Operators::ArithmeticGetIndex, GetIndex);
 			}

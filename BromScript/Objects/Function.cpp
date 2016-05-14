@@ -18,15 +18,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "../Managers/Instance.h"
 #include "Function.h"
+#include "Environment.h"
 
 using namespace Scratch;
 
 namespace BromScript {
-	Function::Function(Instance* bs) : StringTableCount(0), StringTableVars(null), FixedLocalTypes(null), FixedLocalIsRef(null), CodeReferenceFunc(null), CurrentSourceFileLine(-1), CodeOffset(0), FixedLocalsCount(0), CodeLength(0), Code(null), ForceReturn(false), FixedLocalVars(null), FixedLocalKeys(null), IsCpp(false), Parent(null), BromScript(bs), CppFunc(null), CurrentThisObject(null), StringTable(null) {
+	Function::Function(Instance* bs) : Env(nullptr), StringTableCount(0), StringTableVars(null), FixedLocalTypes(null), FixedLocalIsRef(null), CodeReferenceFunc(null), CurrentSourceFileLine(-1), CodeOffset(0), FixedLocalsCount(0), CodeLength(0), Code(null), ForceReturn(false), FixedLocalVars(null), FixedLocalKeys(null), IsCpp(false), Parent(null), BromScript(bs), CppFunc(null), CurrentThisObject(null), StringTable(null) {
 	}
 
 	Function::~Function() {
 		// TODO: stringtable and stringtablevars cleanup
+
+		this->SetEnv(nullptr);
 
 		if (this->CodeReferenceFunc != null) {
 			for (int i = 0; i < this->CodeReferenceFunc->CodeReferenceChilds.Count; i++) {
@@ -152,7 +155,36 @@ namespace BromScript {
 			func = func->Parent;
 		}
 
+		if (this->Env != nullptr) {
+			int retindex = this->Env->Vars.GetHasKeyIndex(key);
+
+			if (retindex > -1) {
+				return this->Env->Vars.GetByIndex(retindex);
+			}
+		}
+
+
 		return this->BromScript->Globals->Get(key);
+	}
+
+	void Function::SetEnv(Environment* env) {
+		if (this->Env != nullptr) {
+			this->Env->RefCounter--;
+
+			if (this->Env->RefCounter == 0) {
+				delete this->Env;
+			}
+		}
+
+		if (env != nullptr) {
+			env->RefCounter++;
+		}
+
+		this->Env = env;
+	}
+
+	Environment* Function::GetEnv() {
+		return this->Env;
 	}
 
 	Variable* Function::Run() {

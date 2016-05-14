@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "../Managers/Instance.h"
 #include "../Objects/BSPacket.h"
 #include "../Objects/Function.h"
+#include "../Objects/Environment.h"
 #include "../Objects/UserdataInstance.h"
 #include "../Objects/CompilerException.h"
 #include <stddef.h>
@@ -368,6 +369,8 @@ namespace BromScript {
 		for (int i = 0; i < stacksize; i++) {
 			this->BSI->CurrentStack[i].Func->ForceReturn = oldreturns[i];
 		}
+
+		delete[] oldreturns;
 
 		this->BSI->SetErrorCallback(olderrfunc);
 		this->Debugging = olddebug;

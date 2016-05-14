@@ -130,8 +130,13 @@ if (i != 5) error("while loop invalid or ++ OP invalid!")
 for (local i = 0, i < 5, i++) {}
 if (i != 5) error("while loop invalid or ++ OP invalid!")
 
-foreach (k, v, {1, 2, 3, 4, 5}){ if (k == null || v == null) error("foreach invalid") }
+local tmpnum = 0
+foreach (k, v, {1, 2, 3, 4, 5}){ if (k == null || v == null) { error("foreach invalid") } tmpnum++ }
 foreach (k, v, {a = 1, b = 2, c = 3, d = 4, e = 5}){ if (k == null || v == null) error("foreach indexed invalid") }
+
+if (tmpnum != 5) {
+	error("foreach loop count invalid")
+}
 
 local tbl = {}
 tbl.b = {}

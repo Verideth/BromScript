@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "../Managers/Instance.h"
+#include "../Objects/Environment.h"
 #include "../Objects/CompilerException.h"
 #include "../Objects/RuntimeException.h"
 #include "../Libaries.h"
@@ -145,6 +146,17 @@ namespace BromScript {
 	Variable* Instance::GetDefaultVarTrue() { return this->_Default_Var_True; }
 	Variable* Instance::GetDefaultVarFalse() { return this->_Default_Var_False; }
 
+	Variable* Instance::ToVariable(bool value) { return Converter::ToVariable(this, value); }
+	Variable* Instance::ToVariable(double value) { return Converter::ToVariable(this, value); }
+	Variable* Instance::ToVariable(int value) { return Converter::ToVariable(this, value); }
+	Variable* Instance::ToVariable(long long value) { return Converter::ToVariable(this, value); }
+	Variable* Instance::ToVariable(float value) { return Converter::ToVariable(this, value); }
+	Variable* Instance::ToVariable(const Scratch::CString &value) { return Converter::ToVariable(this, value); }
+	Variable* Instance::ToVariable(const char* value) { return Converter::ToVariable(this, value); }
+	Variable* Instance::ToVariable(Table* value) { return Converter::ToVariable(this, value); }
+	Variable* Instance::ToVariable(const Scratch::CString &key, BSFunction value) { return Converter::ToVariable(this, key, value); }
+	Variable* Instance::ToVariable(const char* key, BSFunction value) { return Converter::ToVariable(this, key, value); }
+
 #ifdef _MSC_VER
 	void Instance::DoDLL(const char* filename) {
 		CString file(filename);
@@ -205,20 +217,24 @@ namespace BromScript {
 	}
 #endif
 
-	Variable* Instance::DoFile(const char* filename) {
+	Variable* Instance::DoFile(const char* filename, Environment* env, bool useCurrentIncludePath) {
 		CString oldincp = this->CurrentIncludePath;
 		CString file(filename);
 		file = file.Replace('\\', '/');
 
-		if (file.Size() > 2 && file[1] != ':')
-			file = this->CurrentIncludePath + filename;
+		if (useCurrentIncludePath) {
+			if (file.Size() > 2 && file[1] != ':' && file[0] != ':')
+				file = this->CurrentIncludePath + filename;
 
-		if (file.Contains('/'))
-			this->CurrentIncludePath += file.Substring(0, file.LastIndexOf('/') + 1);
+			if (file.Contains('/'))
+				this->CurrentIncludePath += file.Substring(0, file.LastIndexOf('/') + 1);
 
+		}
 		CFileStream fs;
 		if (!fs.Open(file, "rb")) {
 			CString str = CString::Format("Cannot open file '%s'", filename);
+			this->CurrentIncludePath = oldincp;
+
 			throw CompilerException(str, filename, -1);
 		}
 
@@ -243,6 +259,8 @@ namespace BromScript {
 
 			if (iscompiled) {
 				if (buff[12] != BROMSCRIPT_CURRENTVERSION) {
+					this->CurrentIncludePath = oldincp;
+
 					delete buff;
 					throw RuntimeException(CString::Format("Cannot execute '%s', invalid CBS version.", filename));
 				}
@@ -251,25 +269,51 @@ namespace BromScript {
 					buff[i] = (byte)Misc::ExecFuncs::Skip;
 				}
 
-				Variable* ret = this->DoCode(filename, buff, filesize);
-				delete[] buff;
+				Variable* ret = nullptr;
+				try {
+					ret = this->DoCode(filename, buff, filesize);
+				} catch (RuntimeException err) {
+					this->CurrentIncludePath = oldincp;
+					delete[] buff;
 
+					throw err;
+				}
+
+				delete[] buff;
 				this->CurrentIncludePath = oldincp;
+
 				return ret;
 			}
 		}
 
-		byte* bytecode = Compiler::Run(filename, (char*)buff, filesize, &filesize);
+		byte* bytecode = nullptr;
+
+		try {
+			bytecode = Compiler::Run(filename, (char*)buff, filesize, &filesize);
+		} catch (CompilerException err) {
+			delete[] buff;
+			this->CurrentIncludePath = oldincp;
+			throw err;
+		}
+
 		delete[] buff;
 
-		Variable* ret = this->DoCode(filename, bytecode, filesize);
+		Variable* ret = nullptr;
+		try {
+			ret = this->DoCode(filename, bytecode, filesize, env);
+		} catch (RuntimeException err) {
+			delete[] bytecode;
+			this->CurrentIncludePath = oldincp;
+			throw err;
+		}
+
 		delete[] bytecode;
 
 		this->CurrentIncludePath = oldincp;
 		return ret;
 	}
 
-	Variable* Instance::DoCode(const char* filename, byte* code, int codelen) {
+	Variable* Instance::DoCode(const char* filename, byte* code, int codelen, Environment* env) {
 		byte* codecopy;
 
 		if (codelen > 13) {
@@ -303,15 +347,20 @@ namespace BromScript {
 			memcpy(codecopy, code, codelen);
 		}
 
+		if (env == nullptr) {
+			env = new Environment(this);
+		}
+
 		Function* f = new Function(this);
 		f->Code = codecopy;
 		f->CodeLength = codelen;
 		f->Name = "BS::Entrypoint";
 		f->Filename = filename;
+		f->SetEnv(env);
+		this->ChunkScopes.Add(f);
 
 		Variable* ret = f->Run();
 
-		this->ChunkScopes.Add(f);
 		return ret;
 	}
 
@@ -333,7 +382,6 @@ namespace BromScript {
 	}
 
 	void Instance::Error(const Scratch::CString& msg, int linenumber, const char* file) {
-		CallStack* stack = new CallStack[this->CurrentStackIndex];
 		int lastiserror = false;
 		for (int i = 0; i < this->CurrentStackIndex; i++) {
 			CallStack* s = &this->CurrentStack[i];
@@ -407,7 +455,7 @@ namespace BromScript {
 		udi->TypeData = ud;
 		udi->Ptr = ptr;
 
-		Variable* var = new Variable();
+		Variable* var = this->GC.GetPooledVariable();
 		var->Value = udi;
 		var->Type = (VariableType::Enum)typeID;
 
@@ -423,7 +471,7 @@ namespace BromScript {
 		udi->TypeData = ud;
 		udi->Ptr = ptr;
 
-		Variable* var = new Variable();
+		Variable* var = this->GC.GetPooledVariable();
 		var->Value = udi;
 		var->Type = (VariableType::Enum)ud->TypeID;
 
@@ -498,6 +546,7 @@ namespace BromScript {
 	void Instance::LoadDefaultLibaries() {
 		this->RegisterFunction("setReadOnly", BromScript::Libaries::Global::SetReadOnly);
 		this->RegisterFunction("tostring", BromScript::Libaries::Global::ToString);
+		this->RegisterFunction("tonumber", BromScript::Libaries::Global::ToNumber);
 		this->RegisterFunction("print", BromScript::Libaries::Global::Print);
 		this->RegisterFunction("call", BromScript::Libaries::Global::Call);
 		this->RegisterFunction("typeof", BromScript::Libaries::Global::TypeOf);
@@ -579,6 +628,7 @@ namespace BromScript {
 		Table* string = new Table(this);
 		string->Set("ToChar", Converter::ToVariable(this, "ToChar", BromScript::Libaries::String::ToChar));
 		string->Set("FromChar", Converter::ToVariable(this, "FromChar", BromScript::Libaries::String::FromChar));
+		string->Set("Merge", Converter::ToVariable(this, "Merge", BromScript::Libaries::String::Merge));
 		string->Set("Split", Converter::ToVariable(this, "Split", BromScript::Libaries::String::Split));
 		string->Set("Sub", Converter::ToVariable(this, "Sub", BromScript::Libaries::String::Sub));
 		string->Set("IndexOf", Converter::ToVariable(this, "IndexOf", BromScript::Libaries::String::IndexOf));
@@ -607,6 +657,7 @@ namespace BromScript {
 		BromScript::Userdatas::IO::RegisterUD(this);
 		BromScript::Userdatas::Interop::RegisterUD(this);
 		BromScript::Userdatas::InteropMethod::RegisterUD(this);
+		BromScript::Userdatas::Array::RegisterUD(this);
 		BromScript::Userdatas::RawData::RegisterUD(this);
 		this->IncludingInternalUserdata = false;
 	}

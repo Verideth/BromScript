@@ -797,6 +797,7 @@ namespace BromScript {
 		func->Name = "Function";
 		func->Filename = filename;
 		func->Parent = data->Function;
+		func->SetEnv(data->Function->GetEnv());
 
 		Variable* var = data->BromScript->GC.GetPooledVariable();
 		var->Value = func;

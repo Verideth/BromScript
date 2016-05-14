@@ -23,30 +23,56 @@
 #define null 0
 #endif
 
+#include <vector>
+
 namespace BromScript{
+
 	template<class Type>
-	class List {
+	class List : public std::vector < Type > {
 	public:
-		List(const List<Type>& copy);
-		List(void);
-		~List(void);
+		List(void) : Count(0), std::vector<Type>() {}
+		List(const List<Type>& copy) : std::vector<Type>(copy), Count(copy.Count) {}
+		List(const std::vector<Type>& copy) : std::vector<Type>(copy), Count((int)copy.size()) {}
 
 		int Count;
-		Type** Buffer;
 
-		void Clear();
-		void Insert(int index, Type object);
-		void Set(int index, Type object);
-		void Add(Type object);
-		Type RemoveAt(int index);
-		Type Get(int index);
-		Type operator[](int index);
+		inline void Clear() {
+			this->clear();
+			this->Count = 0;
+		}
 
-	private:
-		int BufferSize;
+		inline void Insert(int index, const Type& object) {
+			this->insert(this->begin() + index, object);
+			this->Count++;
+		}
 
-		void AllocateMoreSpace();
-		void AllocateMoreSpace(int num);
+		inline int Add(const Type& object) {
+			this->push_back(object);
+			return this->Count++;
+		}
+
+		inline Type RemoveAt(int index) {
+			Type object = (*this)[index];
+
+			this->erase(this->begin() + index);
+			this->Count--;
+
+			return object;
+		}
+
+		inline void Set(int index, const Type& object) { (*this)[index] = object; }
+		inline Type& Get(int index) { return (*this)[index]; }
+		inline Type* Buffer() { return &(*this)[0]; }
+		inline void Reserve(int num) { this->reserve(num); }
+		inline bool Contains(const Type& object) {
+			for (int i = 0; i < this->Count; i++) {
+				if ((*this)[i] == object) {
+					return true;
+				}
+			}
+
+			return false;
+		}
 	};
 }
 

@@ -33,6 +33,8 @@
 #include "../Managers/Debugger.h"
 
 namespace BromScript {
+	class Environment;
+
 	class Instance {
 	public:
 		Instance();
@@ -50,8 +52,8 @@ namespace BromScript {
 		void LoadDefaultLibaries();
 		Variable* DoString(const char* chunkname, const char* code);
 		Variable* DoString(const char* chunkname, const char* code, int size);
-		Variable* DoFile(const char* filename);
-		Variable* DoCode(const char* filename, byte* code, int codelen);
+		Variable* DoFile(const char* filename, Environment* env = nullptr, bool useCurrentIncludePath = true);
+		Variable* DoCode(const char* filename, byte* code, int codelen, Environment* env = nullptr);
 
 
 #ifdef _MSC_VER
@@ -89,6 +91,17 @@ namespace BromScript {
 		Variable* GetDefaultVarTrue();
 		Variable* GetDefaultVarFalse();
 		Variable* GetDefaultVarNull();
+
+		Variable* ToVariable(bool value);
+		Variable* ToVariable(double value);
+		Variable* ToVariable(int value);
+		Variable* ToVariable(long long value);
+		Variable* ToVariable(float value);
+		Variable* ToVariable( const Scratch::CString &value);
+		Variable* ToVariable(const char* value);
+		Variable* ToVariable(Table* value);
+		Variable* ToVariable(const Scratch::CString &key, BSFunction value);
+		Variable* ToVariable(const char* key, BSFunction value);
 
 	private:
 		List<Function*> ChunkScopes;

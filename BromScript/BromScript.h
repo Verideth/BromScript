@@ -32,6 +32,7 @@
 #include "Objects/Userdata.h"
 #include "Objects/CompilerException.h"
 #include "Objects/RuntimeException.h"
+#include "Objects/Environment.h"
 #include "Managers/Compiler.h"
 #include "Managers/Debugger.h"
 #include "Managers/Instance.h"

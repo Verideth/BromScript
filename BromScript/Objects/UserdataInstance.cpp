@@ -83,6 +83,8 @@ namespace BromScript{
 			ArgumentData args;
 			args.SetThisObject(selfobj);
 			args.AddVariable(keyvar);
+			args.BromScript = this->TypeData->BromScript;
+			args.Caller = args.BromScript->GetCurrentFunction();
 
 			ret = getop(this->TypeData->BromScript, &args);
 			if (ret == nullptr) ret = this->TypeData->BromScript->GetDefaultVarNull();
@@ -124,14 +126,49 @@ namespace BromScript{
 						if (ret == nullptr) ret = curp->BromScript->GetDefaultVarNull();
 						else curp->BromScript->GC.RegisterVariable(ret);
 					} else {
-						UserdataInstance* udi2 = new UserdataInstance();
-						udi2->TypeData = ud;
-						udi2->Ptr = (byte*)this->Ptr + udi2->TypeData->Offset;
-
 						ret = curp->BromScript->GC.GetPooledVariable();
-						ret->Value = udi2;
-						ret->Type = (VariableType::Enum)udi2->TypeData->TypeID;
-						ret->IsCpp = true;
+						void* ptr = (byte*)this->Ptr + ud->Offset;
+
+						switch ((VariableType::Enum)ud->TypeID) {
+							case MemberType::Bool:
+								ret->Value = Converter::BoolToPointer(*(bool*)ptr);
+								ret->Type = VariableType::Bool;
+								break;
+							case MemberType::Double:
+								ret->Value = Converter::NumberToPointer(curp->BromScript, *(double*)ptr);
+								ret->Type = VariableType::Number;
+								break;
+							case MemberType::Byte:
+								ret->Value = Converter::NumberToPointer(curp->BromScript, (double)*(byte*)ptr);
+								ret->Type = VariableType::Number;
+								break;
+							case MemberType::Int:
+								ret->Value = Converter::NumberToPointer(curp->BromScript, (double)*(int*)ptr);
+								ret->Type = VariableType::Number;
+								break;
+							case MemberType::Short:
+								ret->Value = Converter::NumberToPointer(curp->BromScript, (double)*(short*)ptr);
+								ret->Type = VariableType::Number;
+								break;
+							case MemberType::Float:
+								ret->Value = Converter::NumberToPointer(curp->BromScript, (double)*(float*)ptr);
+								ret->Type = VariableType::Number;
+								break;
+							case MemberType::Long:
+								ret->Value = Converter::NumberToPointer(curp->BromScript, (double)*(long long*)ptr);
+								ret->Type = VariableType::Number;
+								break;
+							default:
+								UserdataInstance* udi2 = new UserdataInstance();
+								udi2->TypeData = ud;
+								udi2->Ptr = ptr;
+
+								ret = curp->BromScript->GC.GetPooledVariable();
+								ret->Value = udi2;
+								ret->Type = (VariableType::Enum)udi2->TypeData->TypeID;
+								ret->IsCpp = true;
+								break;
+						}
 					}
 
 					return ret;

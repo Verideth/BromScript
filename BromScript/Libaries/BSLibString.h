@@ -26,6 +26,7 @@ namespace BromScript{
 		namespace String{
 			BS_FUNCTION(ToChar);
 			BS_FUNCTION(FromChar);
+			BS_FUNCTION(Merge);
 			BS_FUNCTION(Split);
 			BS_FUNCTION(Sub);
 			BS_FUNCTION(IndexOf);

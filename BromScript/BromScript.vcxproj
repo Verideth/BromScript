@@ -145,6 +145,7 @@
     <ClInclude Include="Objects\CompilerException.h" />
     <ClInclude Include="Libaries\BSLibConsole.h" />
     <ClInclude Include="Managers\Converter.h" />
+    <ClInclude Include="Objects\Environment.h" />
     <ClInclude Include="Objects\ExecuteData.h" />
     <ClInclude Include="Managers\Executer.h" />
     <ClInclude Include="Objects\Function.h" />
@@ -174,6 +175,7 @@
     <ClInclude Include="Objects\Userdata.h" />
     <ClInclude Include="Objects\UserdataInstance.h" />
     <ClInclude Include="Objects\Variable.h" />
+    <ClInclude Include="Userdatas\BSUDArray.h" />
     <ClInclude Include="Userdatas\BSUDInterop.h" />
     <ClInclude Include="Userdatas\BSUDInteropMethod.h" />
     <ClInclude Include="Userdatas\BSUDIO.h" />
@@ -195,6 +197,7 @@
     <ClCompile Include="Objects\CompilerException.cpp" />
     <ClCompile Include="Libaries\BSLibConsole.cpp" />
     <ClCompile Include="Managers\Converter.cpp" />
+    <ClCompile Include="Objects\Environment.cpp" />
     <ClCompile Include="Objects\ExecuteData.cpp" />
     <ClCompile Include="Managers\Executer.cpp" />
     <ClCompile Include="Objects\Function.cpp" />
@@ -220,6 +223,7 @@
     <ClCompile Include="Objects\Userdata.cpp" />
     <ClCompile Include="Objects\UserdataInstance.cpp" />
     <ClCompile Include="Objects\Variable.cpp" />
+    <ClCompile Include="Userdatas\BSUDArray.cpp" />
     <ClCompile Include="Userdatas\BSUDInterop.cpp" />
     <ClCompile Include="Userdatas\BSUDInteropMethod.cpp" />
     <ClCompile Include="Userdatas\BSUDIO.cpp" />

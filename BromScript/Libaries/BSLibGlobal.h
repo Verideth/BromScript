@@ -27,6 +27,7 @@ namespace BromScript{
 			BS_FUNCTION(Sleep);
 			BS_FUNCTION(Environment);
 			BS_FUNCTION(ToString);
+			BS_FUNCTION(ToNumber);
 			BS_FUNCTION(Print);
 			BS_FUNCTION(TypeOf);
 			BS_FUNCTION(Time);
