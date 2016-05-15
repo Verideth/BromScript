@@ -26,7 +26,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v100</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -211,7 +211,6 @@
     <ClCompile Include="Objects\Pool.cpp" />
     <ClCompile Include="Objects\PoolLink.cpp" />
     <ClCompile Include="Objects\PoolReference.cpp" />
-    <ClCompile Include="Objects\PoolTyped.cpp" />
     <ClCompile Include="Objects\RuntimeException.cpp" />
     <ClCompile Include="Scratch\CDictionary.cpp" />
     <ClCompile Include="Scratch\CFileStream.cpp" />

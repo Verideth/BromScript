@@ -31,6 +31,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using namespace Scratch;
 
 namespace BromScript {
+// disable the warning for using the this pointer while not fully being constructed yet. which is fine, Table doesn't do anything with it yet, nor does Debugger.
+#pragma warning( push )
+#pragma warning( disable : 4355)
 	Instance::Instance() :CurrentIncludePath(""), CurrentStackIndex(0), Globals(new Table(this)), KillScriptThreaded(false), Debug(new Debugger(this)), ErrorCallback(nullptr), IncludingInternalUserdata(false) {
 		this->_Default_Var_Null = this->GC.GetPooledVariable();
 		this->_Default_Var_True = this->GC.RegisterVariable(Converter::ToVariable(this, true));
@@ -40,6 +43,7 @@ namespace BromScript {
 		BS_REF_INCREESE(this->_Default_Var_True);
 		BS_REF_INCREESE(this->_Default_Var_False);
 	}
+#pragma warning( pop ) 
 
 	Instance::~Instance() {
 		while (this->ModuleExits.Count > 0)

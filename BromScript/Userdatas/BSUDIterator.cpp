@@ -108,6 +108,7 @@ namespace BromScript {
 				}
 
 				BS_THROW_ERROR(bsi, Scratch::CString::Format("Cannot GetIndex an '%s'", Converter::TypeToString(bsi, iter->Object->Type).str_szBuffer));
+				return nullptr;
 			}
 
 			void RegisterUD(BromScript::Instance* bsi) {

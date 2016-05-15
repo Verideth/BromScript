@@ -323,9 +323,6 @@
     <ClCompile Include="Objects\PoolLink.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Objects\PoolTyped.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Objects\Environment.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
