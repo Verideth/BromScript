@@ -141,7 +141,13 @@ namespace BromScript {
 				if (!args->CheckThisObject(BROMSCRIPT_USERDATA_ARRAY_TYPE, true)) return null;
 				CArray* arr = (CArray*)args->GetThisObjectData();
 
-				if (args->GetVariable(0)->Type == VariableType::Null) return bsi->ToVariable(0);
+				if (args->GetVariable(0)->Type == VariableType::Null) {
+					if (arr->Vars.Count > 0) {
+						return bsi->ToVariable(0);
+					}
+
+					return bsi->GetDefaultVarNull();
+				}
 
 				int next = (int)args->GetVariable(0)->GetNumber() + 1;
 				if (next >= arr->Vars.Count) return bsi->GetDefaultVarNull();

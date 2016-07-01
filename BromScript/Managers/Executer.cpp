@@ -276,6 +276,11 @@ namespace BromScript {
 							if (szOffsetPrev != szOffset && szOffset[-1] == '\\') { // -1 to go back, this is allowed, however, it feels like YOLO.
 								szOffset++;
 							} else {
+								if (tblpos == -1) {
+									BS_THROW_ERROR(data->BromScript, "Not enough indexes in table to replace all % characters (did you forgot to escape \\ one?)");
+									return data->BromScript->GetDefaultVarNull();
+								}
+
 								strRet.AppendToBuffer(szOffsetPrev, szOffset - szOffsetPrev);
 								strRet += tbl->GetByIndex(tblpos)->ToString();
 
@@ -610,7 +615,11 @@ namespace BromScript {
 				return;
 			}
 
-			void* dataptr = ud->Ctor(data->BromScript, &args);
+			Variable* ret = data->BromScript->GC.GetPooledVariable();
+			ret->Type = (VariableType::Enum)ud->TypeID;
+			ret->Value = nullptr;
+
+			void* dataptr = ud->Ctor(data->BromScript, &args, ret);
 			if (dataptr == null) {
 				data->PushStack(data->BromScript->GetDefaultVarNull());
 			} else {
@@ -619,8 +628,6 @@ namespace BromScript {
 				udi->Ptr = dataptr;
 				udi->CallDTor = true;
 
-				Variable* ret = data->BromScript->GC.GetPooledVariable();
-				ret->Type = (VariableType::Enum)ud->TypeID;
 				ret->Value = udi;
 
 				data->PushStack(ret);

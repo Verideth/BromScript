@@ -15,11 +15,16 @@ namespace BromScript{
 	}
 
 	void UserdataInstance::SetIndex(Variable* selfobj, Variable* keyvar, Variable* value) {
-		Variable* member = this->GetIndex(selfobj, keyvar);
+		Scratch::CString key = keyvar->ToString(this->TypeData->BromScript);
+
+		Variable* member = this->GetMember(key, true);
 		if (this->TypeData->BromScript->GetCurrentFunction()->ForceReturn) return;
 
-		if (member->Type != VariableType::Null) {
-			if (Converter::SetMember(this->TypeData->BromScript, member, value, keyvar->ToString())) {
+		if (member != nullptr) {
+			if (Converter::SetMember(this->TypeData->BromScript, member, value, key)) {
+				return;
+			} else {
+				BS_THROW_ERROR(this->TypeData->BromScript, Scratch::CString::Format("Failed to set index called '%s' to set in %s type", key.str_szBuffer, Converter::TypeToString(this->TypeData->BromScript, (VariableType::Enum)this->TypeData->TypeID).str_szBuffer));
 				return;
 			}
 		}
@@ -39,7 +44,7 @@ namespace BromScript{
 			return;
 		}
 
-		BS_THROW_ERROR(this->TypeData->BromScript, Scratch::CString::Format("No index called '%s' to set in %s type", keyvar->ToString(this->TypeData->BromScript).str_szBuffer, Converter::TypeToString(this->TypeData->BromScript, (VariableType::Enum)this->TypeData->TypeID).str_szBuffer));
+		BS_THROW_ERROR(this->TypeData->BromScript, Scratch::CString::Format("No index called '%s' to set in %s type", key.str_szBuffer, Converter::TypeToString(this->TypeData->BromScript, (VariableType::Enum)this->TypeData->TypeID).str_szBuffer));
 	}
 
 	Variable* UserdataInstance::GetMethod(const Scratch::CString& key) {
@@ -112,13 +117,28 @@ namespace BromScript{
 		return nullptr;
 	}
 
-	Variable* UserdataInstance::GetMember(const Scratch::CString& key) {
+	Variable* UserdataInstance::GetMember(const Scratch::CString& key, bool raw) {
 		Userdata* curp = this->TypeData;
 		while (curp != nullptr) {
 			for (int i = 0; i < curp->Members.Count; i++) {
 				Userdata* ud = curp->Members[i];
 				if (ud->Name == key) {
 					Variable* ret;
+					void* ptr = (byte*)this->Ptr + ud->Offset;
+
+					if (raw) {
+						raw:
+						UserdataInstance* udi2 = new UserdataInstance();
+						udi2->TypeData = ud;
+						udi2->Ptr = ptr;
+
+						ret = curp->BromScript->GC.GetPooledVariable();
+						ret->Value = udi2;
+						ret->Type = (VariableType::Enum)udi2->TypeData->TypeID;
+						ret->IsCpp = true;
+
+						return ret;
+					}
 
 					if (ud->Getter != nullptr) {
 						ret = ud->Getter(curp->BromScript, (byte*)this->Ptr + ud->Offset);
@@ -127,7 +147,6 @@ namespace BromScript{
 						else curp->BromScript->GC.RegisterVariable(ret);
 					} else {
 						ret = curp->BromScript->GC.GetPooledVariable();
-						void* ptr = (byte*)this->Ptr + ud->Offset;
 
 						switch ((VariableType::Enum)ud->TypeID) {
 							case MemberType::Bool:
@@ -159,14 +178,7 @@ namespace BromScript{
 								ret->Type = VariableType::Number;
 								break;
 							default:
-								UserdataInstance* udi2 = new UserdataInstance();
-								udi2->TypeData = ud;
-								udi2->Ptr = ptr;
-
-								ret = curp->BromScript->GC.GetPooledVariable();
-								ret->Value = udi2;
-								ret->Type = (VariableType::Enum)udi2->TypeData->TypeID;
-								ret->IsCpp = true;
+								goto raw;
 								break;
 						}
 					}

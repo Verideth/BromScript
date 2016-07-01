@@ -48,7 +48,7 @@
 #include "Objects/List.h"
 
 #define BS_FUNCTION(fn) BromScript::Variable* fn(BromScript::Instance* bsi, BromScript::ArgumentData* args)
-#define BS_FUNCTION_CTOR(fn) void* fn(BromScript::Instance* bsi, BromScript::ArgumentData* args)
+#define BS_FUNCTION_CTOR(fn) void* fn(BromScript::Instance* bsi, BromScript::ArgumentData* args, BromScript::Variable* thisvar)
 #define BS_FUNCTION_DTOR(fn) void fn(BromScript::Instance* bsi, void* data)
 
 #define BS_MODULE(fn) void fn(BromScript::Instance* bsi)
@@ -95,7 +95,7 @@ namespace BromScript {
 
 	typedef unsigned char byte;
 	typedef Variable* (*BSFunction)(Instance* bsi, ArgumentData* args);
-	typedef void* (*BSFunctionCtor)(Instance* bsi, ArgumentData* args);
+	typedef void* (*BSFunctionCtor)(Instance* bsi, ArgumentData* args, Variable* thisvar);
 	typedef void(*BSFunctionDtor)(Instance* bsi, void* data);
 	typedef void(*ErrorFunction)(Instance* bsi, CallStack* stack, int stacksize, const char* name);
 	typedef void(*BSModuleFunction)(Instance*);

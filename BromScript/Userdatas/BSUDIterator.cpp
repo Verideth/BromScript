@@ -61,24 +61,20 @@ namespace BromScript {
 						args.Caller = bsi->GetCurrentFunction();
 						args.SetThisObject(iter->Object);
 						args.AddVariable(iter->UDIndex == nullptr ? bsi->GetDefaultVarNull() : iter->UDIndex);
-						nextkeyvar->GetFunction()->CurrentThisObject = iter->Object;
 
+						nextkeyvar->GetFunction()->CurrentThisObject = iter->Object;
 						Variable* ret = nextkeyvar->GetFunction()->Run(&args);
+						nextkeyvar->GetFunction()->CurrentThisObject = nullptr;
+
 						args.Clear();
 
 						if (ret == null) ret = bsi->GetDefaultVarNull();
 						else bsi->GC.RegisterVariable(ret);
 
-						if (ret->Type == VariableType::Null) return bsi->GetDefaultVarNull();
 						iter->UDIndex = ret;
+						if (ret->Type == VariableType::Null) return bsi->GetDefaultVarNull();
 
-						args.BromScript = bsi;
-						args.Caller = bsi->GetCurrentFunction();
-						args.SetThisObject(iter->Object);
-						args.AddVariable(iter->UDIndex);
-
-						nextkeyvar->GetFunction()->CurrentThisObject = nullptr;
-						return getindexfunc(bsi, &args);
+						return ret;
 					}
 
 					BS_THROW_ERROR(bsi, Scratch::CString::Format("Cannot iterate an '%s'", Converter::TypeToString(bsi, iter->Object->Type).str_szBuffer));
