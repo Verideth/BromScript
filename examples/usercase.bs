@@ -188,4 +188,15 @@ reftest(a, b)
 if (a == 0) error("Function param by reference invalid")
 if (b == 1) error("Function param by value invalid")
 
+local veca = new Vector(-1, -1, -1)
+if (veca.x != -1) error("userdata vector test member ctor invalid")
+
+veca.x +=  1
+if (veca.x != 0) error("userdata vector test member++ invalid")
+veca.x -= 1
+
+local vecb = new Vector(2, 2, 2)
+local vecc = veca + vecb
+if (vecc.x != 1) error("userdata vector test + operator invalid")
+
 print("All tests passed!")

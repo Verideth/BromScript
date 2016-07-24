@@ -134,6 +134,7 @@ namespace BromScript {
 				ArgumentData args;
 				args.AddVariable(a);
 				args.AddVariable(b);
+				args.BromScript = data->BromScript;
 
 				ret = opfunc(data->BromScript, &args);
 
@@ -165,6 +166,7 @@ namespace BromScript {
 			ArgumentData args;
 			args.AddVariable(a);
 			args.AddVariable(b);
+			args.BromScript = data->BromScript;
 
 			Variable* ret = afunc->GetFunction()->Run(&args, bsobj);
 

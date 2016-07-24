@@ -77,6 +77,82 @@ bool forceopenshell = false;
 bool warningsareerrors = false;
 bool attachdebugger = false;
 
+class CVector {
+public:
+	double x;
+	double y;
+	double z;
+};
+
+// Our wrappers 
+// Constructor of the class, return a pointer 
+BS_FUNCTION_CTOR(CVectorCtor) {
+	CVector* ct = new CVector();
+
+	ct->x = args->GetNumber(0);
+	ct->y = args->GetNumber(1);
+	ct->z = args->GetNumber(2);
+
+	// returning null here is fine too, BS will detect it and it will revert the variable to a null type 
+	return ct;
+}
+
+// deconstructor, data is a pointer, delete this here, and do other stuff if you want to. 
+BS_FUNCTION_DTOR(CVectorDtor) {
+	// warning, if you dont delete your data here, then you'll have to clean it up yourself, not deleting it
+	// would be logical for an entity system to prevent crashes
+	// like checking in the entitiy functions itself if a flag has been set 
+	delete (CVector*)data;
+}
+
+// Wrapper functions 
+BS_FUNCTION(CVectorSetFunc) {
+	CVector* ct = (CVector*)args->GetUserdata(0, 999);
+	ct->x = args->GetNumber(1);
+	ct->y = args->GetNumber(2);
+	ct->z = args->GetNumber(3);
+
+	return null;
+}
+
+BS_FUNCTION(CVectorGetXFunc) {
+	CVector* ct = (CVector*)args->GetUserdata(0, 999);
+	return BromScript::Converter::ToVariable(bsi, ct->x); // again, returning null here is fine. 
+}
+
+BS_FUNCTION(CVectorGetYFunc) {
+	CVector* ct = (CVector*)args->GetUserdata(0, 999);
+	return BromScript::Converter::ToVariable(bsi, ct->y);
+}
+
+BS_FUNCTION(CVectorGetZFunc) {
+	CVector* ct = (CVector*)args->GetUserdata(0, 999);
+	return BromScript::Converter::ToVariable(bsi, ct->z);
+}
+
+BS_FUNCTION(CVector__AddOperator) {
+	// You can also register Operators, these work the same way as normal BSFunctions 
+	// However, they always get called with 2 arguments, a + b, a is index 0, b is index 1. 
+	// As example, a is an CVector class, and b is a number. you can do a + b
+	// this will make the second argument a number, and the first one a CVector 
+	// However, if you do b + a, the same function also gets called. at that moment
+	// the 0 index argument will be the number and not the CVector 
+	// So you'll need to typecheck to see what a is, and what b is. 
+
+	if (!args->CheckType(0, 999)) return null;
+	if (!args->CheckType(1, 999)) return null;
+
+	CVector* leftvalue = (CVector*)args->GetUserdata(0, 999);
+	CVector* rightvalue = (CVector*)args->GetUserdata(1, 999);
+
+	CVector* newvec = new CVector();
+	newvec->x = leftvalue->x + rightvalue->x;
+	newvec->y = leftvalue->y + rightvalue->y;
+	newvec->z = leftvalue->z + rightvalue->z;
+
+	return args->BromScript->CreateUserdata(999, newvec, true);
+}
+
 void OutputSuccess(const char* type, const char* file, int line, const char* msg) {
 	if (line > -1) {
 		if (formated) {
@@ -299,6 +375,30 @@ int main(int argc, char* argv[]) {
 
 				bsi.SetErrorCallback(errfunc);
 				bsi.RegisterFunction("print", Print);
+				
+				// Register everything in the bsi, the CTor and DTor can be null, it'll throw an error inside BS when the user
+				// tries to create a type, and it will just not call the dtor incase that's null(watch out with leaks here!) 
+				BromScript::Userdata* vd = bsi.RegisterUserdata("Vector", 999, sizeof(CVector), CVectorCtor, CVectorDtor);
+
+				// add indexes for x, y and x so we can do "vector.x = 15"
+				// Don't use string as membertype unless you're also supplying a getter and setter, using them witouth will cause memory leaks
+				// BS has no idea if it should delete old ones, or keep them in memory
+				// should it allocate and put a pointer back? or is it an fixed sized array? We dont know!
+				vd->RegisterMember("x", offsetof(CVector, x), BromScript::MemberType::Double);
+				vd->RegisterMember("y", offsetof(CVector, y), BromScript::MemberType::Double);
+				vd->RegisterMember("z", offsetof(CVector, z), BromScript::MemberType::Double);
+
+				// Our wrapper funcs 
+				vd->RegisterFunction("Set", CVectorSetFunc);
+				vd->RegisterFunction("GetX", CVectorGetXFunc);
+				vd->RegisterFunction("GetY", CVectorGetYFunc);
+				vd->RegisterFunction("GetZ", CVectorGetZFunc);
+
+				// Our add operator
+				vd->RegisterOperator(BromScript::Operators::ArithmeticAdd, CVector__AddOperator);
+
+				// And now, we can use the following code to create a new Vector in BromScript 
+				// local vec = new Vector() 
 
 				if (attachdebugger) {
 					if (!bsi.Debug->Connect()) {
